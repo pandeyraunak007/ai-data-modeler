@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createGroqClient, GENERATION_PARAMS } from '@/lib/groq';
+import { callGroqDirect, GENERATION_PARAMS } from '@/lib/groq';
 import { createGeneratePrompt } from '@/lib/prompts/generateERD';
 import { smartLayout } from '@/lib/autoLayout';
 import { DataModel, Entity, Relationship, generateId, DEFAULT_ENTITY_WIDTH, calculateEntityHeight } from '@/types/model';
@@ -19,16 +19,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create Groq client
-    const groq = createGroqClient();
-
-    // Generate ERD using AI
+    // Generate ERD using AI (using direct fetch for better serverless compatibility)
     const { messages } = createGeneratePrompt(prompt);
 
-    const completion = await groq.chat.completions.create({
-      ...GENERATION_PARAMS,
-      messages,
-    });
+    const completion = await callGroqDirect(messages, GENERATION_PARAMS);
 
     const responseContent = completion.choices[0]?.message?.content;
 

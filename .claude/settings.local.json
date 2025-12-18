@@ -15,7 +15,8 @@
       "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" auth status)",
       "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" auth login --web -h github.com)",
       "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" repo create ai-data-modeler --public --description \"AI-powered data modeling tool - Generate ER diagrams from natural language using Groq/Llama 3.3 70B\" --source=. --remote=origin --push)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(git push:*)"
     ]
   }
 }

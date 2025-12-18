@@ -12,7 +12,40 @@ export function createGroqClient() {
 
   return new Groq({
     apiKey,
+    timeout: 30000,
+    maxRetries: 2,
   });
+}
+
+// Direct fetch-based Groq API call (fallback for serverless environments)
+export async function callGroqDirect(messages: any[], params: any) {
+  const apiKey = process.env.GROQ_API_KEY;
+
+  if (!apiKey) {
+    throw new Error('GROQ_API_KEY environment variable is not set');
+  }
+
+  const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: params.model || GROQ_MODEL,
+      messages,
+      temperature: params.temperature || 0.3,
+      max_tokens: params.max_tokens || 4096,
+      response_format: params.response_format,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.text();
+    throw new Error(`Groq API error: ${response.status} - ${errorData}`);
+  }
+
+  return response.json();
 }
 
 // Model configuration
