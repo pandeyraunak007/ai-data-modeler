@@ -9,6 +9,8 @@ A record of issues encountered during development and deployment of the AI Data 
 1. [Vercel 500 Error - Generate API](#issue-1-vercel-500-error---generate-api)
 2. [ThemeContext SSR Error](#issue-2-themecontext-ssr-error)
 3. [Vercel 500 Error - Chat API](#issue-3-vercel-500-error---chat-api)
+4. [TypeScript Category Type Error](#issue-4-typescript-category-type-error)
+5. [TypeScript Set Iteration Error](#issue-5-typescript-set-iteration-error)
 
 ---
 
@@ -228,6 +230,98 @@ while (true) {
 
 ---
 
+## Issue #4: TypeScript Category Type Error
+
+### Date
+December 2024
+
+### Description
+When implementing the EntityEditModal component for direct entity editing, TypeScript threw a type error when setting the category state from a dropdown select.
+
+### Error Message
+```
+Type 'string' is not assignable to parameter of type 'SetStateAction<"standard" | "lookup" | "junction" | "view">'
+```
+
+### Root Cause
+The `useState` hook was inferring a generic `string` type, but the Entity type requires the category to be one of four specific string literals: `'standard' | 'lookup' | 'junction' | 'view'`.
+
+### Solution
+Explicitly typed the `useState` hook and cast the select onChange value to the union type.
+
+### Files Modified
+- `src/components/canvas/EntityEditModal.tsx`
+
+### Code Changes
+
+**Before (problematic):**
+```typescript
+const [category, setCategory] = useState(entity.category || 'standard');
+
+<select onChange={(e) => setCategory(e.target.value)}>
+```
+
+**After (fixed):**
+```typescript
+const [category, setCategory] = useState<'standard' | 'lookup' | 'junction' | 'view'>(
+  entity.category || 'standard'
+);
+
+<select onChange={(e) => setCategory(e.target.value as 'standard' | 'lookup' | 'junction' | 'view')}>
+```
+
+### Status
+✅ Resolved
+
+---
+
+## Issue #5: TypeScript Set Iteration Error
+
+### Date
+December 2024
+
+### Description
+When implementing the EntityProperties component with expandable attributes, TypeScript threw an error when trying to spread a Set into a new Set.
+
+### Error Message
+```
+Type 'Set<string>' can only be iterated through when using the '--downlevelIteration' flag or with a '--target' of 'es2015' or higher.
+```
+
+### Root Cause
+TypeScript's default configuration doesn't allow direct iteration of Set objects using the spread operator. The `[...prev]` syntax requires the `downlevelIteration` compiler option or ES2015+ target.
+
+### Solution
+Used `Array.from()` to convert the Set to an array before creating a new Set, which is compatible with all TypeScript configurations.
+
+### Files Modified
+- `src/components/properties/EntityProperties.tsx`
+
+### Code Changes
+
+**Before (problematic):**
+```typescript
+setExpandedAttrs(prev => {
+  const next = new Set([...prev]);
+  next.add(newAttr.id);
+  return next;
+});
+```
+
+**After (fixed):**
+```typescript
+setExpandedAttrs(prev => {
+  const next = new Set(Array.from(prev));
+  next.add(newAttr.id);
+  return next;
+});
+```
+
+### Status
+✅ Resolved
+
+---
+
 ## Prevention Strategies
 
 ### For Groq SDK Issues
@@ -239,6 +333,11 @@ while (true) {
 - Provide default values for React contexts instead of throwing errors
 - Use `useEffect` for client-only operations
 - Add `mounted` state checks before accessing browser APIs
+
+### For TypeScript Type Issues
+- Always explicitly type `useState` hooks when using union types or string literals
+- Use `Array.from()` instead of spread operator for Set iteration
+- Cast event values explicitly when TypeScript can't infer the correct type
 
 ---
 

@@ -44,6 +44,10 @@ graph LR
 | AI-Powered Generation | Llama 3.3 70B via Groq API |
 | Real-time Chat | Modify models conversationally |
 | Visual Editor | Drag, pan, zoom entities |
+| Direct Editing | Double-click entities/relationships to edit |
+| Properties Panel | Inline editing of all properties |
+| SQL DDL Export | Export to PostgreSQL, MySQL, SQL Server, Oracle, SQLite |
+| Light/Dark Mode | Toggle between themes |
 | Auto-Layout | Smart entity positioning |
 | Persistence | Auto-save to browser storage |
 
@@ -104,6 +108,16 @@ flowchart TB
             EntityCard
             RelationshipLine
             CanvasToolbar
+            EntityEditModal
+            RelationshipEditModal
+        end
+
+        subgraph PropertiesComponents["Properties Panel"]
+            PropertiesPanel
+            ModelProperties
+            EntityProperties
+            RelationshipProperties
+            InlineEdit
         end
 
         subgraph ChatComponents["Chat"]
@@ -112,10 +126,16 @@ flowchart TB
             ChatInput
             SuggestionChips
         end
+
+        subgraph ExportComponents["Export"]
+            DDLExportModal
+            DDLGenerator
+        end
     end
 
     subgraph State["🔄 State Management"]
         ModelContext[ModelContext Provider]
+        ThemeContext[ThemeContext Provider]
     end
 
     subgraph API["🔌 API Layer"]
@@ -125,11 +145,15 @@ flowchart TB
 
     Landing --> ModelContext
     Workspace --> ModelContext
+    Workspace --> ThemeContext
     Workspace --> DiagramCanvas
+    Workspace --> PropertiesPanel
     Workspace --> ChatPanel
     DiagramCanvas --> EntityCard
     DiagramCanvas --> RelationshipLine
     DiagramCanvas --> CanvasToolbar
+    DiagramCanvas --> EntityEditModal
+    DiagramCanvas --> RelationshipEditModal
     ChatPanel --> ChatMessage
     ChatPanel --> ChatInput
     ChatPanel --> SuggestionChips
@@ -337,19 +361,29 @@ mindmap
             Crow's Foot Notation
             Pan & Zoom Controls
             Grid Toggle
+            Light/Dark Mode
         Editing
             Drag & Drop Entities
             Chat-based Modifications
+            Direct Entity Editing
+            Direct Relationship Editing
+            Properties Panel
+            Inline Editing
+            Add New Entities
             Real-time Updates
+        Export
+            JSON Export
+            SQL DDL Export
+            Multi-Database Support
         Persistence
             Auto-save to LocalStorage
-            JSON Export
             Model Reload
         UX
-            Dark Theme
+            Light/Dark Theme Toggle
             Keyboard Shortcuts
             Example Prompts
             Loading States
+            Collapsible Panels
 ```
 
 ### Keyboard Shortcuts
@@ -362,6 +396,43 @@ mindmap
 | `-` / `_` | Zoom out |
 | `0` | Reset zoom |
 | `Ctrl + Scroll` | Zoom |
+| `Enter` | Edit selected entity/relationship |
+| `Delete` / `Backspace` | Delete selected item |
+| `Double-click` | Open edit modal |
+
+### SQL DDL Export
+
+Export your data model to SQL for multiple database systems:
+
+| Database | Features |
+|----------|----------|
+| PostgreSQL | Full support with JSONB, comments |
+| MySQL | TINYINT for booleans, JSON type |
+| SQL Server | NVARCHAR, BIT, DATETIME2 |
+| Oracle | NUMBER types, VARCHAR2, CLOB |
+| SQLite | Simplified types, AUTOINCREMENT |
+
+**Export Options:**
+- Include DROP statements
+- Include comments
+- Include foreign keys
+- Include indexes
+
+### Properties Panel
+
+The Properties Panel provides inline editing for all model elements:
+
+| View | Properties |
+|------|------------|
+| Model (nothing selected) | Name, description, target database, entity list |
+| Entity (selected) | Name, physical name, category, description, attributes |
+| Relationship (selected) | Name, type, cardinality, source/target entities |
+
+**Inline Editing Features:**
+- Click any property to edit
+- Press Enter to save, Escape to cancel
+- Checkbox toggles for constraints
+- Dropdown selects for types/categories
 
 ### Entity Categories
 
@@ -477,17 +548,38 @@ ai-data-modeler/
 │   │       └── chat/route.ts     # Chat modifications
 │   ├── components/
 │   │   ├── canvas/               # Canvas components
-│   │   └── chat/                 # Chat components
+│   │   │   ├── DiagramCanvas.tsx
+│   │   │   ├── EntityCard.tsx
+│   │   │   ├── RelationshipLine.tsx
+│   │   │   ├── CanvasToolbar.tsx
+│   │   │   ├── EntityEditModal.tsx
+│   │   │   └── RelationshipEditModal.tsx
+│   │   ├── chat/                 # Chat components
+│   │   │   ├── ChatPanel.tsx
+│   │   │   ├── ChatMessage.tsx
+│   │   │   ├── ChatInput.tsx
+│   │   │   └── SuggestionChips.tsx
+│   │   ├── properties/           # Properties panel
+│   │   │   ├── PropertiesPanel.tsx
+│   │   │   ├── ModelProperties.tsx
+│   │   │   ├── EntityProperties.tsx
+│   │   │   ├── RelationshipProperties.tsx
+│   │   │   └── InlineEdit.tsx
+│   │   └── DDLExportModal.tsx    # SQL export
 │   ├── context/
-│   │   └── ModelContext.tsx      # Global state
+│   │   ├── ModelContext.tsx      # Model state
+│   │   └── ThemeContext.tsx      # Theme state
 │   ├── lib/
 │   │   ├── groq.ts               # Groq client
 │   │   ├── autoLayout.ts         # Entity positioning
+│   │   ├── ddlGenerator.ts       # SQL DDL generation
 │   │   └── prompts/              # AI prompts
 │   └── types/
 │       ├── model.ts              # Data types
 │       └── chat.ts               # Chat types
 ├── .env.local                    # Environment variables
+├── Guide.md                      # This documentation
+├── issues.md                     # Issue tracking
 ├── package.json
 └── tailwind.config.ts
 ```
@@ -567,42 +659,51 @@ CMD ["npm", "start"]
 timeline
     title AI Data Modeler Roadmap
 
-    section Phase 1 - Foundation
+    section Phase 1 - Foundation ✅
         Core Features : Natural language generation
                       : Interactive canvas
                       : Chat modifications
                       : JSON export
 
-    section Phase 2 - Enhanced Export
+    section Phase 2 - Enhanced Export ✅
         SQL Generation : PostgreSQL DDL
                        : MySQL DDL
                        : SQL Server DDL
-        Format Support : PNG/SVG export
-                       : PDF documentation
+                       : Oracle DDL
+                       : SQLite DDL
+        Direct Editing : Entity edit modals
+                       : Relationship editing
+                       : Properties panel
 
-    section Phase 3 - Collaboration
-        Multi-user : Real-time collaboration
-                   : Share links
-                   : Comments
-        History    : Version control
-                   : Undo/redo
+    section Phase 3 - UI/UX ✅
+        Themes     : Light/Dark mode
+                   : Collapsible panels
+        Editing    : Inline property editing
+                   : Add entity button
+                   : Keyboard shortcuts
 
-    section Phase 4 - Advanced
-        Import     : Reverse engineer from DB
+    section Phase 4 - Future
+        Export     : PNG/SVG image export
+                   : PDF documentation
+        Collaboration : Real-time collaboration
+                      : Share links
+        Advanced   : Undo/redo
                    : Import from SQL
-        Templates  : Industry templates
-                   : Custom patterns
+                   : Templates
 ```
 
-### Planned Features
+### Feature Status
 
 | Priority | Feature | Status |
 |----------|---------|--------|
-| High | SQL DDL export | Planned |
-| High | PNG/SVG image export | Planned |
+| High | SQL DDL export (5 databases) | ✅ Complete |
+| High | Direct entity editing | ✅ Complete |
+| High | Properties panel | ✅ Complete |
+| High | Light/Dark mode | ✅ Complete |
+| Medium | Inline editing | ✅ Complete |
+| Medium | Keyboard shortcuts | ✅ Complete |
+| Medium | PNG/SVG image export | Planned |
 | Medium | Undo/Redo system | Planned |
-| Medium | Entity color customization | Planned |
-| Medium | Relationship labels | Planned |
 | Low | Real-time collaboration | Future |
 | Low | Database reverse engineering | Future |
 | Low | Template library | Future |
