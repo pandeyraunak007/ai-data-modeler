@@ -2,13 +2,14 @@
 
 import React from 'react';
 import { Entity, Attribute, ENTITY_HEADER_HEIGHT, ATTRIBUTE_ROW_HEIGHT, ENTITY_PADDING } from '@/types/model';
-import { Key, Link, Hash, CircleDot } from 'lucide-react';
+import { Key, Link, Hash, CircleDot, Edit3 } from 'lucide-react';
 
 interface EntityCardProps {
   entity: Entity;
   isSelected: boolean;
   onSelect: () => void;
   onDragStart: (e: React.MouseEvent) => void;
+  onEdit: () => void;
 }
 
 export default function EntityCard({
@@ -16,6 +17,7 @@ export default function EntityCard({
   isSelected,
   onSelect,
   onDragStart,
+  onEdit,
 }: EntityCardProps) {
   // Get header color based on category
   const getHeaderColor = () => {
@@ -72,6 +74,10 @@ export default function EntityCard({
         e.stopPropagation();
         onSelect();
       }}
+      onDoubleClick={(e) => {
+        e.stopPropagation();
+        onEdit();
+      }}
       onMouseDown={onDragStart}
       style={{ cursor: 'move' }}
     >
@@ -87,13 +93,25 @@ export default function EntityCard({
         >
           {/* Header */}
           <div
-            className={`${getHeaderColor()} px-3 py-2 rounded-t-lg flex items-center justify-between`}
+            className={`${getHeaderColor()} px-3 py-2 rounded-t-lg flex items-center justify-between group`}
             style={{ height: ENTITY_HEADER_HEIGHT }}
           >
-            <span className="font-semibold text-white truncate">{entity.name}</span>
-            {entity.category && entity.category !== 'standard' && (
-              <span className="text-xs text-white/70 uppercase">{entity.category}</span>
-            )}
+            <span className="font-semibold text-white truncate flex-1">{entity.name}</span>
+            <div className="flex items-center gap-1">
+              {entity.category && entity.category !== 'standard' && (
+                <span className="text-xs text-white/70 uppercase">{entity.category}</span>
+              )}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit();
+                }}
+                className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-white/20 transition-all"
+                title="Edit entity"
+              >
+                <Edit3 className="w-3.5 h-3.5 text-white" />
+              </button>
+            </div>
           </div>
 
           {/* Attributes container */}

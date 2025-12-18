@@ -8,6 +8,7 @@ import {
   Hand,
   MousePointer,
   Grid,
+  Plus,
 } from 'lucide-react';
 
 interface CanvasToolbarProps {
@@ -20,6 +21,7 @@ interface CanvasToolbarProps {
   onToolChange: (tool: 'select' | 'pan') => void;
   showGrid: boolean;
   onToggleGrid: () => void;
+  onAddEntity?: () => void;
 }
 
 export default function CanvasToolbar({
@@ -32,6 +34,7 @@ export default function CanvasToolbar({
   onToolChange,
   showGrid,
   onToggleGrid,
+  onAddEntity,
 }: CanvasToolbarProps) {
   return (
     <div className="absolute top-4 left-4 flex flex-col gap-2">
@@ -96,6 +99,19 @@ export default function CanvasToolbar({
           <Grid className="w-4 h-4" />
         </button>
       </div>
+
+      {/* Add Entity */}
+      {onAddEntity && (
+        <div className="bg-dark-card border border-dark-border rounded-lg p-1 flex flex-col gap-1">
+          <button
+            onClick={onAddEntity}
+            className="toolbar-btn bg-accent-primary/20 hover:bg-accent-primary/30 text-accent-primary"
+            title="Add Entity"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

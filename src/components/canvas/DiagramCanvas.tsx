@@ -2,9 +2,12 @@
 
 import React, { useRef, useState, useCallback, useEffect } from 'react';
 import { useModel } from '@/context/ModelContext';
+import { Entity, Relationship, generateId, calculateEntityHeight, DEFAULT_ENTITY_WIDTH } from '@/types/model';
 import EntityCard from './EntityCard';
 import RelationshipLine from './RelationshipLine';
 import CanvasToolbar from './CanvasToolbar';
+import EntityEditModal from './EntityEditModal';
+import RelationshipEditModal from './RelationshipEditModal';
 
 const MIN_ZOOM = 0.1;
 const MAX_ZOOM = 3;
@@ -21,7 +24,16 @@ export default function DiagramCanvas() {
     selectEntity,
     selectRelationship,
     updateEntity,
+    deleteEntity,
+    addEntity,
+    updateRelationship,
+    deleteRelationship,
+    addRelationship,
   } = useModel();
+
+  // Edit modal state
+  const [editingEntity, setEditingEntity] = useState<Entity | null>(null);
+  const [editingRelationship, setEditingRelationship] = useState<Relationship | null>(null);
 
   // Canvas state
   const [zoom, setZoom] = useState(1);
@@ -202,14 +214,95 @@ export default function DiagramCanvas() {
           break;
         case 'Delete':
         case 'Backspace':
-          // Handle delete in context
+          if (selectedEntityId) {
+            deleteEntity(selectedEntityId);
+            selectEntity(null);
+          } else if (selectedRelationshipId) {
+            deleteRelationship(selectedRelationshipId);
+            selectRelationship(null);
+          }
+          break;
+        case 'Enter':
+          if (selectedEntityId) {
+            const entity = model?.entities.find(e => e.id === selectedEntityId);
+            if (entity) setEditingEntity(entity);
+          } else if (selectedRelationshipId) {
+            const rel = model?.relationships.find(r => r.id === selectedRelationshipId);
+            if (rel) setEditingRelationship(rel);
+          }
           break;
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleZoomIn, handleZoomOut, handleZoomReset]);
+  }, [handleZoomIn, handleZoomOut, handleZoomReset, selectedEntityId, selectedRelationshipId, deleteEntity, deleteRelationship, selectEntity, selectRelationship, model]);
+
+  // Entity edit handlers
+  const handleEntityEdit = useCallback((entity: Entity) => {
+    setEditingEntity(entity);
+  }, []);
+
+  const handleEntitySave = useCallback((updates: Partial<Entity>) => {
+    if (editingEntity) {
+      updateEntity(editingEntity.id, updates);
+    }
+  }, [editingEntity, updateEntity]);
+
+  const handleEntityDelete = useCallback(() => {
+    if (editingEntity) {
+      deleteEntity(editingEntity.id);
+      selectEntity(null);
+    }
+  }, [editingEntity, deleteEntity, selectEntity]);
+
+  // Relationship edit handlers
+  const handleRelationshipEdit = useCallback((relationship: Relationship) => {
+    setEditingRelationship(relationship);
+  }, []);
+
+  const handleRelationshipSave = useCallback((updates: Partial<Relationship>) => {
+    if (editingRelationship) {
+      updateRelationship(editingRelationship.id, updates);
+    }
+  }, [editingRelationship, updateRelationship]);
+
+  const handleRelationshipDelete = useCallback(() => {
+    if (editingRelationship) {
+      deleteRelationship(editingRelationship.id);
+      selectRelationship(null);
+    }
+  }, [editingRelationship, deleteRelationship, selectRelationship]);
+
+  // Add new entity handler
+  const handleAddEntity = useCallback(() => {
+    const newEntity: Entity = {
+      id: generateId(),
+      name: 'NewEntity',
+      physicalName: 'new_entity',
+      description: '',
+      category: 'standard',
+      x: 100 + Math.random() * 200,
+      y: 100 + Math.random() * 200,
+      width: DEFAULT_ENTITY_WIDTH,
+      height: calculateEntityHeight(1),
+      attributes: [
+        {
+          id: generateId(),
+          name: 'id',
+          type: 'INT',
+          isPrimaryKey: true,
+          isForeignKey: false,
+          isRequired: true,
+          isUnique: true,
+          isIndexed: false,
+        },
+      ],
+    };
+    addEntity(newEntity);
+    selectEntity(newEntity.id);
+    setEditingEntity(newEntity);
+  }, [addEntity, selectEntity]);
 
   if (!model) {
     return (
@@ -275,6 +368,7 @@ export default function DiagramCanvas() {
                 targetEntity={targetEntity}
                 isSelected={selectedRelationshipId === rel.id}
                 onSelect={() => selectRelationship(rel.id)}
+                onEdit={() => handleRelationshipEdit(rel)}
               />
             );
           })}
@@ -287,6 +381,7 @@ export default function DiagramCanvas() {
               isSelected={selectedEntityId === entity.id}
               onSelect={() => selectEntity(entity.id)}
               onDragStart={(e) => handleEntityDragStart(entity.id, e)}
+              onEdit={() => handleEntityEdit(entity)}
             />
           ))}
         </g>
@@ -303,6 +398,7 @@ export default function DiagramCanvas() {
         onToolChange={setTool}
         showGrid={showGrid}
         onToggleGrid={() => setShowGrid((s) => !s)}
+        onAddEntity={handleAddEntity}
       />
 
       {/* Model info */}
@@ -311,6 +407,29 @@ export default function DiagramCanvas() {
           {model.entities.length} entities · {model.relationships.length} relationships
         </span>
       </div>
+
+      {/* Entity Edit Modal */}
+      {editingEntity && (
+        <EntityEditModal
+          entity={editingEntity}
+          isOpen={!!editingEntity}
+          onClose={() => setEditingEntity(null)}
+          onSave={handleEntitySave}
+          onDelete={handleEntityDelete}
+        />
+      )}
+
+      {/* Relationship Edit Modal */}
+      {editingRelationship && (
+        <RelationshipEditModal
+          relationship={editingRelationship}
+          entities={model.entities}
+          isOpen={!!editingRelationship}
+          onClose={() => setEditingRelationship(null)}
+          onSave={handleRelationshipSave}
+          onDelete={handleRelationshipDelete}
+        />
+      )}
     </div>
   );
 }

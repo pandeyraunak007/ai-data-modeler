@@ -9,6 +9,7 @@ interface RelationshipLineProps {
   targetEntity: Entity;
   isSelected: boolean;
   onSelect: () => void;
+  onEdit: () => void;
 }
 
 // Calculate the best connection points between two entities
@@ -124,6 +125,7 @@ export default function RelationshipLine({
   targetEntity,
   isSelected,
   onSelect,
+  onEdit,
 }: RelationshipLineProps) {
   const { sourcePoint, targetPoint } = calculateConnectionPoints(sourceEntity, targetEntity);
 
@@ -146,6 +148,10 @@ export default function RelationshipLine({
       onClick={(e) => {
         e.stopPropagation();
         onSelect();
+      }}
+      onDoubleClick={(e) => {
+        e.stopPropagation();
+        onEdit();
       }}
       style={{ cursor: 'pointer' }}
       className={isSelected ? 'text-accent-primary' : 'text-gray-500'}
