@@ -7,7 +7,6 @@ import {
   Maximize2,
   Hand,
   MousePointer,
-  Grid,
   Plus,
   Trash2,
   Undo2,
@@ -22,8 +21,6 @@ interface CanvasToolbarProps {
   onFitToScreen: () => void;
   tool: 'select' | 'pan';
   onToolChange: (tool: 'select' | 'pan') => void;
-  showGrid: boolean;
-  onToggleGrid: () => void;
   onAddEntity?: () => void;
   onDelete?: () => void;
   hasSelection?: boolean;
@@ -37,8 +34,6 @@ export default function CanvasToolbar({
   onFitToScreen,
   tool,
   onToolChange,
-  showGrid,
-  onToggleGrid,
   onAddEntity,
   onDelete,
   hasSelection,
@@ -93,17 +88,6 @@ export default function CanvasToolbar({
           title="Fit to Screen"
         >
           <Maximize2 className="w-4 h-4" />
-        </button>
-      </div>
-
-      {/* View options */}
-      <div className="bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-lg p-1 flex flex-col gap-1 shadow-sm">
-        <button
-          onClick={onToggleGrid}
-          className={`toolbar-btn ${showGrid ? 'active' : ''}`}
-          title="Toggle Grid"
-        >
-          <Grid className="w-4 h-4" />
         </button>
       </div>
 

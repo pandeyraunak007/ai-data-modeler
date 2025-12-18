@@ -47,12 +47,12 @@ export default function ChatInput({ onSend, disabled, placeholder }: ChatInputPr
         placeholder={placeholder || "Type a message..."}
         disabled={disabled}
         rows={1}
-        className="flex-1 bg-dark-card border border-dark-border rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-accent-primary disabled:opacity-50"
+        className="flex-1 bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-accent-primary disabled:opacity-50 text-gray-900 dark:text-white placeholder-gray-500"
       />
       <button
         type="submit"
         disabled={!message.trim() || disabled}
-        className="p-2 bg-accent-primary hover:bg-accent-primary/90 disabled:bg-gray-700 disabled:cursor-not-allowed rounded-lg transition-colors"
+        className="p-2 bg-accent-primary hover:bg-accent-primary/90 disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed rounded-lg transition-colors text-white"
       >
         {disabled ? (
           <Loader2 className="w-5 h-5 animate-spin" />

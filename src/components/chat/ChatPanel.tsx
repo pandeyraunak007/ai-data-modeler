@@ -285,7 +285,7 @@ export default function ChatPanel() {
   }
 
   return (
-    <div className="w-80 bg-dark-bg border-l border-dark-border flex flex-col h-full">
+    <div className="w-80 bg-white dark:bg-dark-bg border-l border-light-border dark:border-dark-border flex flex-col h-full">
       {/* Header */}
       <div className="panel-header">
         <div className="flex items-center gap-2">
@@ -295,14 +295,14 @@ export default function ChatPanel() {
         <div className="flex items-center gap-1">
           <button
             onClick={handleClearChat}
-            className="p-1.5 hover:bg-dark-hover rounded transition-colors"
+            className="p-1.5 hover:bg-light-hover dark:hover:bg-dark-hover rounded transition-colors"
             title="Clear chat"
           >
             <Trash2 className="w-4 h-4 text-gray-500" />
           </button>
           <button
             onClick={() => setIsCollapsed(true)}
-            className="p-1.5 hover:bg-dark-hover rounded transition-colors"
+            className="p-1.5 hover:bg-light-hover dark:hover:bg-dark-hover rounded transition-colors"
           >
             <X className="w-4 h-4 text-gray-500" />
           </button>
@@ -328,12 +328,12 @@ export default function ChatPanel() {
       </div>
 
       {/* Suggestions */}
-      <div className="px-4 py-2 border-t border-dark-border">
+      <div className="px-4 py-2 border-t border-light-border dark:border-dark-border">
         <SuggestionChips onSelect={handleSend} disabled={isProcessing} />
       </div>
 
       {/* Input */}
-      <div className="p-4 border-t border-dark-border">
+      <div className="p-4 border-t border-light-border dark:border-dark-border">
         <ChatInput
           onSend={handleSend}
           disabled={isProcessing || !model}

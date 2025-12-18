@@ -39,7 +39,6 @@ export default function DiagramCanvas() {
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [tool, setTool] = useState<'select' | 'pan'>('select');
-  const [showGrid, setShowGrid] = useState(true);
 
   // Drag state
   const [isDragging, setIsDragging] = useState(false);
@@ -338,29 +337,11 @@ export default function DiagramCanvas() {
         onWheel={handleWheel}
         onClick={handleCanvasClick}
       >
-        {/* Background grid */}
-        {showGrid && (
-          <defs>
-            <pattern
-              id="grid"
-              width={20 * zoom}
-              height={20 * zoom}
-              patternUnits="userSpaceOnUse"
-            >
-              <path
-                d={`M ${20 * zoom} 0 L 0 0 0 ${20 * zoom}`}
-                fill="none"
-                stroke="#1a1a1a"
-                strokeWidth="1"
-              />
-            </pattern>
-          </defs>
-        )}
+        {/* Clean background */}
         <rect
-          className="canvas-background"
+          className="canvas-background fill-gray-50 dark:fill-[#0C0C0C]"
           width="100%"
           height="100%"
-          fill={showGrid ? 'url(#grid)' : '#0C0C0C'}
         />
 
         {/* Main content group with pan and zoom */}
@@ -407,8 +388,6 @@ export default function DiagramCanvas() {
         onFitToScreen={handleFitToScreen}
         tool={tool}
         onToolChange={setTool}
-        showGrid={showGrid}
-        onToggleGrid={() => setShowGrid((s) => !s)}
         onAddEntity={handleAddEntity}
         onDelete={handleDeleteSelected}
         hasSelection={!!(selectedEntityId || selectedRelationshipId)}

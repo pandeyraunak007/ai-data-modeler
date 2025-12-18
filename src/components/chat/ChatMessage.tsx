@@ -21,7 +21,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
             ? 'bg-accent-primary'
             : isError
             ? 'bg-accent-danger'
-            : 'bg-dark-card border border-dark-border'
+            : 'bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border'
         }`}
       >
         {isUser ? (
@@ -47,7 +47,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
 
         {/* Show model changes if any */}
         {message.modelChanges && message.modelChanges.length > 0 && (
-          <div className="mt-2 pt-2 border-t border-dark-border">
+          <div className="mt-2 pt-2 border-t border-light-border dark:border-dark-border">
             <p className="text-xs text-gray-500 mb-1">Changes applied:</p>
             <ul className="text-xs space-y-0.5">
               {message.modelChanges.map((change, i) => (

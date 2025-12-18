@@ -24,7 +24,7 @@ export default function SuggestionChips({ onSelect, disabled }: SuggestionChipsP
           key={suggestion.id}
           onClick={() => onSelect(suggestion.prompt)}
           disabled={disabled}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-dark-card border border-dark-border rounded-full text-xs hover:bg-dark-hover hover:border-accent-primary/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-full text-xs hover:bg-light-hover dark:hover:bg-dark-hover hover:border-accent-primary/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           <span className="text-accent-primary">
             {iconMap[suggestion.icon || 'sparkles'] || <Sparkles className="w-3 h-3" />}
