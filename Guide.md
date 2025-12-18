@@ -748,12 +748,25 @@ timeline
                      : SVG vector export
                      : Copy to clipboard
 
-    section Phase 6 - Future
-        Documentation : PDF documentation
-        Collaboration : Real-time collaboration
-                      : Share links
-        Advanced   : Undo/redo
-                   : Templates
+    section Phase 6 - Core Improvements
+        History    : Undo/redo system
+        Docs       : PDF documentation
+        Templates  : Schema templates library
+
+    section Phase 7 - AI Data Lineage
+        Lineage    : Auto column-level lineage
+                   : SQL/DBT parsing
+                   : Semantic column matching
+                   : Change-impact alerts
+
+    section Phase 8 - Conversational Lineage
+        Assistant  : NL lineage queries
+                   : RAG over metadata
+                   : Business explanations
+
+    section Phase 9 - Collaboration
+        Sharing    : Real-time collaboration
+                   : Team workspaces
 ```
 
 ### Feature Status
@@ -769,8 +782,46 @@ timeline
 | Medium | Inline editing | ✅ Complete |
 | Medium | Keyboard shortcuts | ✅ Complete |
 | Medium | Undo/Redo system | Planned |
+| Medium | PDF documentation export | Planned |
+| Medium | Schema templates library | Planned |
+| **High** | **AI-driven column-level lineage** | **Planned** |
+| **High** | **Semantic column matching (embeddings)** | **Planned** |
+| **High** | **Change-impact alerts** | **Planned** |
+| **High** | **Business lineage explanations** | **Planned** |
+| **High** | **Conversational lineage assistant** | **Planned** |
+| **High** | **NL → lineage graph traversal** | **Planned** |
+| **High** | **RAG over metadata** | **Planned** |
 | Low | Real-time collaboration | Future |
-| Low | Template library | Future |
+| Low | Team workspaces | Future |
+
+### Planned AI Features (Phase 7-8)
+
+#### AI-Driven Data Lineage
+
+**Problem:** Lineage today is manual, incomplete, and breaks when SQL changes. Business users don't understand technical lineage.
+
+**Solution - Intelligent Column-Level Lineage Generator:**
+
+| Capability | Description |
+|------------|-------------|
+| Auto-parsing | LLM parses SQL, DBT models, stored procedures |
+| Column mapping | Identifies source → transformation → target |
+| Semantic matching | Uses embeddings to match column intent (e.g., `cust_id` ↔ `customer_identifier`) |
+| Change alerts | Impact alerts when upstream SQL changes |
+| Business context | "Explain this lineage in business terms" button |
+
+#### Conversational Lineage Assistant
+
+**Problem:** Users ask "Where does revenue come from?" but current tools need 5 clicks and SQL knowledge.
+
+**Solution - Chat-based Lineage:**
+
+| Capability | Description |
+|------------|-------------|
+| NL queries | Natural language to lineage graph traversal |
+| RAG system | Retrieval over metadata + lineage store |
+| Smart responses | "Revenue comes from Orders table → filtered by completed status → joined with pricing rules" |
+| Detection | Highlight broken or partial lineage |
 
 ---
 
