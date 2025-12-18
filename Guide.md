@@ -47,6 +47,7 @@ graph LR
 | Direct Editing | Double-click entities/relationships to edit |
 | Properties Panel | Inline editing of all properties |
 | SQL DDL Export | Export to PostgreSQL, MySQL, SQL Server, Oracle, SQLite |
+| SQL Import | Reverse engineer ERD from existing SQL DDL files |
 | Light/Dark Mode | Toggle between themes |
 | Auto-Layout | Smart entity positioning |
 | Persistence | Auto-save to browser storage |
@@ -141,6 +142,7 @@ flowchart TB
     subgraph API["🔌 API Layer"]
         GenerateRoute["/api/generate"]
         ChatRoute["/api/chat"]
+        ReverseRoute["/api/reverse-engineer"]
     end
 
     Landing --> ModelContext
@@ -371,6 +373,10 @@ mindmap
             Inline Editing
             Add New Entities
             Real-time Updates
+        Import
+            SQL DDL Import
+            Reverse Engineering
+            Multi-Database Parsing
         Export
             JSON Export
             SQL DDL Export
@@ -417,6 +423,24 @@ Export your data model to SQL for multiple database systems:
 - Include comments
 - Include foreign keys
 - Include indexes
+
+### SQL Import / Reverse Engineering
+
+Import existing SQL DDL files to generate ERD diagrams:
+
+| Feature | Description |
+|---------|-------------|
+| File Upload | Import .sql files from landing page or workspace |
+| AI-Powered Parsing | Uses Llama 3.3 70B to extract entities and relationships |
+| Multi-Database Support | Parses PostgreSQL, MySQL, SQL Server, Oracle, SQLite syntax |
+| Smart Detection | Identifies primary keys, foreign keys, indexes, and constraints |
+| Auto-Layout | Automatically positions entities after import |
+
+**How to Import:**
+1. Click "Import SQL" button on landing page or workspace header
+2. Select a .sql file containing CREATE TABLE statements
+3. AI analyzes the DDL and generates the ERD
+4. Review and edit the generated model as needed
 
 ### Properties Panel
 
@@ -544,8 +568,9 @@ ai-data-modeler/
 │   │   ├── layout.tsx            # Root layout
 │   │   ├── globals.css           # Global styles
 │   │   └── api/
-│   │       ├── generate/route.ts # ERD generation
-│   │       └── chat/route.ts     # Chat modifications
+│   │       ├── generate/route.ts          # ERD generation
+│   │       ├── chat/route.ts              # Chat modifications
+│   │       └── reverse-engineer/route.ts  # SQL import
 │   ├── components/
 │   │   ├── canvas/               # Canvas components
 │   │   │   ├── DiagramCanvas.tsx
@@ -682,13 +707,17 @@ timeline
                    : Add entity button
                    : Keyboard shortcuts
 
-    section Phase 4 - Future
+    section Phase 4 - Import ✅
+        SQL Import : Reverse engineer from SQL DDL
+                   : Multi-database parsing
+                   : AI-powered extraction
+
+    section Phase 5 - Future
         Export     : PNG/SVG image export
                    : PDF documentation
         Collaboration : Real-time collaboration
                       : Share links
         Advanced   : Undo/redo
-                   : Import from SQL
                    : Templates
 ```
 
@@ -700,12 +729,12 @@ timeline
 | High | Direct entity editing | ✅ Complete |
 | High | Properties panel | ✅ Complete |
 | High | Light/Dark mode | ✅ Complete |
+| High | SQL Import / Reverse engineering | ✅ Complete |
 | Medium | Inline editing | ✅ Complete |
 | Medium | Keyboard shortcuts | ✅ Complete |
 | Medium | PNG/SVG image export | Planned |
 | Medium | Undo/Redo system | Planned |
 | Low | Real-time collaboration | Future |
-| Low | Database reverse engineering | Future |
 | Low | Template library | Future |
 
 ---
@@ -799,7 +828,9 @@ MIT License - See [LICENSE](LICENSE) for details.
 
 <div align="center">
 
-**Built with Next.js & Groq AI**
+**Created by Raunak Pandey**
+
+Built with Next.js & Groq AI
 
 [Live Demo](https://ai-data-modeler.vercel.app) | [GitHub](https://github.com/pandeyraunak007/ai-data-modeler)
 
