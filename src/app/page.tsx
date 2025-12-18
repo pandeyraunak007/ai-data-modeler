@@ -30,6 +30,8 @@ import {
   GitBranch,
   Download,
   Share2,
+  Upload,
+  FileCode,
 } from 'lucide-react';
 
 const iconMap: Record<string, React.ReactNode> = {
@@ -81,6 +83,7 @@ const stats = [
 export default function LandingPage() {
   const [prompt, setPrompt] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const { setModel, setIsGenerating, model } = useModel();
@@ -123,6 +126,47 @@ export default function LandingPage() {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && e.metaKey) {
       handleGenerate();
+    }
+  };
+
+  const handleSqlFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.name.endsWith('.sql')) {
+      setError('Please select a .sql file');
+      return;
+    }
+
+    setIsImporting(true);
+    setError(null);
+
+    try {
+      // Read file content
+      const sqlContent = await file.text();
+
+      // Call reverse engineer API
+      const response = await fetch('/api/reverse-engineer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sqlContent }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to import SQL');
+      }
+
+      setModel(data.model);
+      router.push('/workspace');
+    } catch (err: any) {
+      setError(err.message || 'Failed to import SQL file');
+    } finally {
+      setIsImporting(false);
+      // Reset input so the same file can be selected again
+      e.target.value = '';
     }
   };
 
@@ -259,7 +303,7 @@ export default function LandingPage() {
             {/* Generate Button */}
             <button
               onClick={handleGenerate}
-              disabled={!prompt.trim() || isLoading}
+              disabled={!prompt.trim() || isLoading || isImporting}
               className="w-full py-4 bg-gradient-to-r from-accent-primary to-purple-600 hover:from-accent-primary-dark hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed rounded-xl font-semibold text-lg text-white flex items-center justify-center gap-3 transition-all shadow-xl shadow-accent-primary/25 hover:shadow-2xl hover:shadow-accent-primary/30 disabled:shadow-none"
             >
               {isLoading ? (
@@ -274,6 +318,45 @@ export default function LandingPage() {
                 </>
               )}
             </button>
+
+            {/* Import SQL Section */}
+            <div className="pt-6 border-t border-light-border dark:border-dark-border mt-6">
+              <div className="text-center mb-4">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Or import an existing database schema
+                </p>
+              </div>
+
+              <label className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-light-border dark:border-dark-border rounded-2xl cursor-pointer hover:border-accent-primary/50 transition-all ${isImporting ? 'opacity-60 cursor-not-allowed' : ''}`}>
+                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                  {isImporting ? (
+                    <>
+                      <Loader2 className="w-8 h-8 mb-2 text-accent-primary animate-spin" />
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Analyzing SQL and generating ERD...
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <FileCode className="w-8 h-8 mb-2 text-gray-400 dark:text-gray-500" />
+                      <p className="mb-1 text-sm text-gray-500 dark:text-gray-400">
+                        <span className="font-semibold text-accent-primary">Upload SQL file</span> to reverse engineer
+                      </p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500">
+                        Supports PostgreSQL, MySQL, SQL Server, Oracle, SQLite
+                      </p>
+                    </>
+                  )}
+                </div>
+                <input
+                  type="file"
+                  accept=".sql"
+                  className="hidden"
+                  onChange={handleSqlFileUpload}
+                  disabled={isImporting || isLoading}
+                />
+              </label>
+            </div>
           </div>
         </section>
 

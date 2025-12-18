@@ -19,6 +19,8 @@ import {
   ChevronDown,
   FilePlus,
   FolderOpen,
+  Upload,
+  Loader2,
 } from 'lucide-react';
 
 export default function WorkspacePage() {
@@ -27,7 +29,9 @@ export default function WorkspacePage() {
   const { theme, toggleTheme } = useTheme();
   const [showDDLModal, setShowDDLModal] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [isImportingSql, setIsImportingSql] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const sqlFileInputRef = useRef<HTMLInputElement>(null);
 
   // Redirect to home if no model
   useEffect(() => {
@@ -84,6 +88,45 @@ export default function WorkspacePage() {
     reader.readAsText(file);
     // Reset file input so same file can be selected again
     event.target.value = '';
+  };
+
+  const handleImportSql = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.name.endsWith('.sql')) {
+      alert('Please select a .sql file');
+      return;
+    }
+
+    setIsImportingSql(true);
+
+    try {
+      // Read file content
+      const sqlContent = await file.text();
+
+      // Call reverse engineer API
+      const response = await fetch('/api/reverse-engineer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sqlContent }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to import SQL');
+      }
+
+      setModel(data.model);
+    } catch (err: any) {
+      alert(err.message || 'Failed to import SQL file');
+    } finally {
+      setIsImportingSql(false);
+      // Reset input so same file can be selected again
+      event.target.value = '';
+    }
   };
 
   if (!model) {
@@ -178,6 +221,25 @@ export default function WorkspacePage() {
               type="file"
               accept=".json"
               onChange={handleOpenFile}
+              className="hidden"
+            />
+            <button
+              onClick={() => sqlFileInputRef.current?.click()}
+              disabled={isImportingSql}
+              className="p-2 rounded-lg bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border hover:bg-light-hover dark:hover:bg-dark-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Import SQL (DDL)"
+            >
+              {isImportingSql ? (
+                <Loader2 className="w-4 h-4 animate-spin text-accent-primary" />
+              ) : (
+                <Upload className="w-4 h-4" />
+              )}
+            </button>
+            <input
+              ref={sqlFileInputRef}
+              type="file"
+              accept=".sql"
+              onChange={handleImportSql}
               className="hidden"
             />
             <button
