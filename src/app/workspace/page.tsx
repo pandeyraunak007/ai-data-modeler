@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useModel } from '@/context/ModelContext';
 import { useTheme } from '@/context/ThemeContext';
 import DiagramCanvas from '@/components/canvas/DiagramCanvas';
 import ChatPanel from '@/components/chat/ChatPanel';
+import DDLExportModal from '@/components/DDLExportModal';
 import {
   Database,
   Home,
@@ -14,12 +15,16 @@ import {
   Sun,
   Moon,
   ChevronLeft,
+  FileCode,
+  ChevronDown,
 } from 'lucide-react';
 
 export default function WorkspacePage() {
   const router = useRouter();
   const { model, saveToLocalStorage } = useModel();
   const { theme, toggleTheme } = useTheme();
+  const [showDDLModal, setShowDDLModal] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
 
   // Redirect to home if no model
   useEffect(() => {
@@ -120,14 +125,56 @@ export default function WorkspacePage() {
             <span className="hidden sm:inline">Save</span>
           </button>
 
-          <button
-            onClick={handleExport}
-            className="flex items-center gap-2 px-3 py-1.5 bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-lg hover:bg-light-hover dark:hover:bg-dark-hover transition-colors text-sm"
-            title="Export Model"
-          >
-            <Download className="w-4 h-4" />
-            <span className="hidden sm:inline">Export</span>
-          </button>
+          {/* Export dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowExportMenu(!showExportMenu)}
+              className="flex items-center gap-2 px-3 py-1.5 bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-lg hover:bg-light-hover dark:hover:bg-dark-hover transition-colors text-sm"
+              title="Export Model"
+            >
+              <Download className="w-4 h-4" />
+              <span className="hidden sm:inline">Export</span>
+              <ChevronDown className="w-3 h-3" />
+            </button>
+
+            {showExportMenu && (
+              <>
+                <div
+                  className="fixed inset-0 z-10"
+                  onClick={() => setShowExportMenu(false)}
+                />
+                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-dark-card border border-light-border dark:border-dark-border rounded-xl shadow-xl z-20 overflow-hidden">
+                  <button
+                    onClick={() => {
+                      handleExport();
+                      setShowExportMenu(false);
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-left hover:bg-light-hover dark:hover:bg-dark-hover transition-colors"
+                  >
+                    <Download className="w-4 h-4 text-gray-500" />
+                    <div>
+                      <div className="font-medium">Export JSON</div>
+                      <div className="text-xs text-gray-500">Model data file</div>
+                    </div>
+                  </button>
+                  <div className="border-t border-light-border dark:border-dark-border" />
+                  <button
+                    onClick={() => {
+                      setShowDDLModal(true);
+                      setShowExportMenu(false);
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-left hover:bg-light-hover dark:hover:bg-dark-hover transition-colors"
+                  >
+                    <FileCode className="w-4 h-4 text-accent-primary" />
+                    <div>
+                      <div className="font-medium">Export SQL DDL</div>
+                      <div className="text-xs text-gray-500">CREATE TABLE scripts</div>
+                    </div>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
 
           <div className="w-px h-6 bg-light-border dark:bg-dark-border mx-2" />
 
@@ -149,6 +196,13 @@ export default function WorkspacePage() {
         {/* Chat Panel */}
         <ChatPanel />
       </div>
+
+      {/* DDL Export Modal */}
+      <DDLExportModal
+        isOpen={showDDLModal}
+        onClose={() => setShowDDLModal(false)}
+        model={model}
+      />
     </div>
   );
 }
