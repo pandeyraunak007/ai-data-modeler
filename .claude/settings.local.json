@@ -5,7 +5,17 @@
       "Bash(cat:*)",
       "Bash(git init:*)",
       "Bash(gh:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(vercel --version:*)",
+      "Bash(git commit:*)",
+      "Bash(git config:*)",
+      "Bash(vercel:*)",
+      "Bash(winget install:*)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" --version)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" auth status)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" auth login --web -h github.com)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" repo create ai-data-modeler --public --description \"AI-powered data modeling tool - Generate ER diagrams from natural language using Groq/Llama 3.3 70B\" --source=. --remote=origin --push)",
+      "Bash(curl:*)"
     ]
   }
 }

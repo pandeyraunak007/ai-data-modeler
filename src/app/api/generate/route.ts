@@ -4,6 +4,10 @@ import { createGeneratePrompt } from '@/lib/prompts/generateERD';
 import { smartLayout } from '@/lib/autoLayout';
 import { DataModel, Entity, Relationship, generateId, DEFAULT_ENTITY_WIDTH, calculateEntityHeight } from '@/types/model';
 
+// Force Node.js runtime for Groq SDK compatibility
+export const runtime = 'nodejs';
+export const maxDuration = 30;
+
 export async function POST(request: NextRequest) {
   try {
     const { prompt, targetDatabase = 'postgresql' } = await request.json();
@@ -105,12 +109,22 @@ export async function POST(request: NextRequest) {
 
   } catch (error: any) {
     console.error('Generation error:', error);
+    console.error('Error name:', error.name);
+    console.error('Error stack:', error.stack);
 
     // Handle specific error types
     if (error.message?.includes('GROQ_API_KEY')) {
       return NextResponse.json(
         { error: 'AI service not configured. Please set GROQ_API_KEY.' },
         { status: 500 }
+      );
+    }
+
+    // Handle connection errors
+    if (error.message?.includes('Connection') || error.code === 'ECONNREFUSED') {
+      return NextResponse.json(
+        { error: 'Failed to connect to AI service. Please try again.' },
+        { status: 503 }
       );
     }
 

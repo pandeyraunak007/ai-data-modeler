@@ -3,6 +3,10 @@ import { createGroqClient, CHAT_PARAMS } from '@/lib/groq';
 import { createModifyPrompt } from '@/lib/prompts/modifyModel';
 import { DataModel } from '@/types/model';
 
+// Force Node.js runtime for Groq SDK compatibility
+export const runtime = 'nodejs';
+export const maxDuration = 30;
+
 export async function POST(request: NextRequest) {
   try {
     const { message, currentModel } = await request.json();
