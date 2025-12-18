@@ -3,12 +3,15 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { DataModel, Entity, Relationship, createEmptyModel, generateId } from '@/types/model';
 
+type ViewMode = 'logical' | 'physical';
+
 interface ModelState {
   model: DataModel | null;
   selectedEntityId: string | null;
   selectedRelationshipId: string | null;
   isGenerating: boolean;
   error: string | null;
+  viewMode: ViewMode;
 }
 
 interface ModelContextType extends ModelState {
@@ -33,6 +36,9 @@ interface ModelContextType extends ModelState {
   setIsGenerating: (isGenerating: boolean) => void;
   setError: (error: string | null) => void;
 
+  // View mode
+  setViewMode: (mode: ViewMode) => void;
+
   // Persistence
   saveToLocalStorage: () => void;
   loadFromLocalStorage: () => boolean;
@@ -49,6 +55,7 @@ export function ModelProvider({ children }: { children: React.ReactNode }) {
     selectedRelationshipId: null,
     isGenerating: false,
     error: null,
+    viewMode: 'logical',
   });
 
   // Load from localStorage on mount
@@ -218,6 +225,10 @@ export function ModelProvider({ children }: { children: React.ReactNode }) {
     setState(prev => ({ ...prev, error }));
   }, []);
 
+  const setViewMode = useCallback((viewMode: ViewMode) => {
+    setState(prev => ({ ...prev, viewMode }));
+  }, []);
+
   const saveToLocalStorage = useCallback(() => {
     if (state.model) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state.model));
@@ -253,6 +264,7 @@ export function ModelProvider({ children }: { children: React.ReactNode }) {
     selectRelationship,
     setIsGenerating,
     setError,
+    setViewMode,
     saveToLocalStorage,
     loadFromLocalStorage,
   };

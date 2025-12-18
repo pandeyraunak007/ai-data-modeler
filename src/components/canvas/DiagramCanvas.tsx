@@ -274,6 +274,17 @@ export default function DiagramCanvas() {
     }
   }, [editingRelationship, deleteRelationship, selectRelationship]);
 
+  // Delete selected item handler
+  const handleDeleteSelected = useCallback(() => {
+    if (selectedEntityId) {
+      deleteEntity(selectedEntityId);
+      selectEntity(null);
+    } else if (selectedRelationshipId) {
+      deleteRelationship(selectedRelationshipId);
+      selectRelationship(null);
+    }
+  }, [selectedEntityId, selectedRelationshipId, deleteEntity, deleteRelationship, selectEntity, selectRelationship]);
+
   // Add new entity handler
   const handleAddEntity = useCallback(() => {
     const newEntity: Entity = {
@@ -306,7 +317,7 @@ export default function DiagramCanvas() {
 
   if (!model) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-dark-bg text-gray-500">
+      <div className="flex-1 flex items-center justify-center bg-light-bg dark:bg-dark-bg text-gray-500">
         <p>No model loaded. Generate one from the home page.</p>
       </div>
     );
@@ -315,7 +326,7 @@ export default function DiagramCanvas() {
   return (
     <div
       ref={containerRef}
-      className="flex-1 relative overflow-hidden bg-dark-bg"
+      className="flex-1 relative overflow-hidden bg-gray-100 dark:bg-dark-bg"
     >
       <svg
         ref={svgRef}
@@ -399,11 +410,13 @@ export default function DiagramCanvas() {
         showGrid={showGrid}
         onToggleGrid={() => setShowGrid((s) => !s)}
         onAddEntity={handleAddEntity}
+        onDelete={handleDeleteSelected}
+        hasSelection={!!(selectedEntityId || selectedRelationshipId)}
       />
 
       {/* Model info */}
-      <div className="absolute bottom-4 left-4 bg-dark-card/90 backdrop-blur-sm border border-dark-border rounded-lg px-3 py-2 text-sm">
-        <span className="text-gray-400">
+      <div className="absolute bottom-4 left-4 bg-light-card/90 dark:bg-dark-card/90 backdrop-blur-sm border border-light-border dark:border-dark-border rounded-lg px-3 py-2 text-sm shadow-sm">
+        <span className="text-gray-600 dark:text-gray-400">
           {model.entities.length} entities · {model.relationships.length} relationships
         </span>
       </div>

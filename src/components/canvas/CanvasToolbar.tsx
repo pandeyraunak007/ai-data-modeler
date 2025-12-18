@@ -9,6 +9,9 @@ import {
   MousePointer,
   Grid,
   Plus,
+  Trash2,
+  Undo2,
+  Redo2,
 } from 'lucide-react';
 
 interface CanvasToolbarProps {
@@ -22,6 +25,8 @@ interface CanvasToolbarProps {
   showGrid: boolean;
   onToggleGrid: () => void;
   onAddEntity?: () => void;
+  onDelete?: () => void;
+  hasSelection?: boolean;
 }
 
 export default function CanvasToolbar({
@@ -35,11 +40,13 @@ export default function CanvasToolbar({
   showGrid,
   onToggleGrid,
   onAddEntity,
+  onDelete,
+  hasSelection,
 }: CanvasToolbarProps) {
   return (
     <div className="absolute top-4 left-4 flex flex-col gap-2">
       {/* Tool selection */}
-      <div className="bg-dark-card border border-dark-border rounded-lg p-1 flex flex-col gap-1">
+      <div className="bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-lg p-1 flex flex-col gap-1 shadow-sm">
         <button
           onClick={() => onToolChange('select')}
           className={`toolbar-btn ${tool === 'select' ? 'active' : ''}`}
@@ -57,7 +64,7 @@ export default function CanvasToolbar({
       </div>
 
       {/* Zoom controls */}
-      <div className="bg-dark-card border border-dark-border rounded-lg p-1 flex flex-col gap-1">
+      <div className="bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-lg p-1 flex flex-col gap-1 shadow-sm">
         <button
           onClick={onZoomIn}
           className="toolbar-btn"
@@ -79,7 +86,7 @@ export default function CanvasToolbar({
         >
           <ZoomOut className="w-4 h-4" />
         </button>
-        <div className="border-t border-dark-border my-1" />
+        <div className="border-t border-light-border dark:border-dark-border my-1" />
         <button
           onClick={onFitToScreen}
           className="toolbar-btn"
@@ -90,7 +97,7 @@ export default function CanvasToolbar({
       </div>
 
       {/* View options */}
-      <div className="bg-dark-card border border-dark-border rounded-lg p-1 flex flex-col gap-1">
+      <div className="bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-lg p-1 flex flex-col gap-1 shadow-sm">
         <button
           onClick={onToggleGrid}
           className={`toolbar-btn ${showGrid ? 'active' : ''}`}
@@ -100,9 +107,9 @@ export default function CanvasToolbar({
         </button>
       </div>
 
-      {/* Add Entity */}
-      {onAddEntity && (
-        <div className="bg-dark-card border border-dark-border rounded-lg p-1 flex flex-col gap-1">
+      {/* Entity Actions */}
+      <div className="bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-lg p-1 flex flex-col gap-1 shadow-sm">
+        {onAddEntity && (
           <button
             onClick={onAddEntity}
             className="toolbar-btn bg-accent-primary/20 hover:bg-accent-primary/30 text-accent-primary"
@@ -110,8 +117,40 @@ export default function CanvasToolbar({
           >
             <Plus className="w-4 h-4" />
           </button>
-        </div>
-      )}
+        )}
+        {onDelete && (
+          <button
+            onClick={onDelete}
+            disabled={!hasSelection}
+            className={`toolbar-btn ${
+              hasSelection
+                ? 'text-red-500 hover:bg-red-500/20'
+                : 'opacity-40 cursor-not-allowed'
+            }`}
+            title="Delete Selected (Del)"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+
+      {/* History (Undo/Redo) - Disabled for now */}
+      <div className="bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-lg p-1 flex flex-col gap-1 shadow-sm">
+        <button
+          disabled
+          className="toolbar-btn opacity-40 cursor-not-allowed"
+          title="Undo (Coming Soon)"
+        >
+          <Undo2 className="w-4 h-4" />
+        </button>
+        <button
+          disabled
+          className="toolbar-btn opacity-40 cursor-not-allowed"
+          title="Redo (Coming Soon)"
+        >
+          <Redo2 className="w-4 h-4" />
+        </button>
+      </div>
     </div>
   );
 }

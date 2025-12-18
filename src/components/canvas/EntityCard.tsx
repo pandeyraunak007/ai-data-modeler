@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Entity, Attribute, ENTITY_HEADER_HEIGHT, ATTRIBUTE_ROW_HEIGHT, ENTITY_PADDING } from '@/types/model';
+import { useModel } from '@/context/ModelContext';
 import { Key, Link, Hash, CircleDot, Edit3 } from 'lucide-react';
 
 interface EntityCardProps {
@@ -19,6 +20,13 @@ export default function EntityCard({
   onDragStart,
   onEdit,
 }: EntityCardProps) {
+  const { viewMode } = useModel();
+
+  // Get display name based on view mode
+  const displayName = viewMode === 'physical'
+    ? (entity.physicalName || entity.name.toLowerCase().replace(/\s+/g, '_'))
+    : entity.name;
+
   // Get header color based on category
   const getHeaderColor = () => {
     switch (entity.category) {
@@ -96,7 +104,7 @@ export default function EntityCard({
             className={`${getHeaderColor()} px-3 py-2 rounded-t-lg flex items-center justify-between group`}
             style={{ height: ENTITY_HEADER_HEIGHT }}
           >
-            <span className="font-semibold text-white truncate flex-1">{entity.name}</span>
+            <span className="font-semibold text-white truncate flex-1">{displayName}</span>
             <div className="flex items-center gap-1">
               {entity.category && entity.category !== 'standard' && (
                 <span className="text-xs text-white/70 uppercase">{entity.category}</span>

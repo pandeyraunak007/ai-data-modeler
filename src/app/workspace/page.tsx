@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useModel } from '@/context/ModelContext';
 import { useTheme } from '@/context/ThemeContext';
@@ -10,7 +10,6 @@ import ChatPanel from '@/components/chat/ChatPanel';
 import DDLExportModal from '@/components/DDLExportModal';
 import {
   Database,
-  Home,
   Download,
   Save,
   Sun,
@@ -18,14 +17,17 @@ import {
   ChevronLeft,
   FileCode,
   ChevronDown,
+  FilePlus,
+  FolderOpen,
 } from 'lucide-react';
 
 export default function WorkspacePage() {
   const router = useRouter();
-  const { model, saveToLocalStorage } = useModel();
+  const { model, saveToLocalStorage, setModel, viewMode, setViewMode } = useModel();
   const { theme, toggleTheme } = useTheme();
   const [showDDLModal, setShowDDLModal] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Redirect to home if no model
   useEffect(() => {
@@ -59,6 +61,29 @@ export default function WorkspacePage() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+  };
+
+  const handleOpenFile = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const loadedModel = JSON.parse(e.target?.result as string);
+        // Validate model structure
+        if (loadedModel.entities && loadedModel.relationships) {
+          setModel(loadedModel);
+        } else {
+          alert('Invalid model file: missing entities or relationships');
+        }
+      } catch {
+        alert('Failed to parse file. Please select a valid JSON model file.');
+      }
+    };
+    reader.readAsText(file);
+    // Reset file input so same file can be selected again
+    event.target.value = '';
   };
 
   if (!model) {
@@ -104,6 +129,68 @@ export default function WorkspacePage() {
 
         {/* Actions */}
         <div className="flex items-center gap-2">
+          {/* View Mode Toggle */}
+          <div className="flex rounded-lg border border-light-border dark:border-dark-border overflow-hidden">
+            <button
+              onClick={() => setViewMode('logical')}
+              className={`px-3 py-1.5 text-sm transition-colors ${
+                viewMode === 'logical'
+                  ? 'bg-accent-primary text-white'
+                  : 'bg-light-card dark:bg-dark-card hover:bg-light-hover dark:hover:bg-dark-hover'
+              }`}
+              title="Show logical names (business names)"
+            >
+              Logical
+            </button>
+            <button
+              onClick={() => setViewMode('physical')}
+              className={`px-3 py-1.5 text-sm transition-colors ${
+                viewMode === 'physical'
+                  ? 'bg-accent-primary text-white'
+                  : 'bg-light-card dark:bg-dark-card hover:bg-light-hover dark:hover:bg-dark-hover'
+              }`}
+              title="Show physical names (SQL table names)"
+            >
+              Physical
+            </button>
+          </div>
+
+          <div className="w-px h-6 bg-light-border dark:bg-dark-border mx-1" />
+
+          {/* File Operations */}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => router.push('/')}
+              className="p-2 rounded-lg bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border hover:bg-light-hover dark:hover:bg-dark-hover transition-colors"
+              title="New Model"
+            >
+              <FilePlus className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="p-2 rounded-lg bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border hover:bg-light-hover dark:hover:bg-dark-hover transition-colors"
+              title="Open Model"
+            >
+              <FolderOpen className="w-4 h-4" />
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json"
+              onChange={handleOpenFile}
+              className="hidden"
+            />
+            <button
+              onClick={handleSave}
+              className="p-2 rounded-lg bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border hover:bg-light-hover dark:hover:bg-dark-hover transition-colors"
+              title="Save Model"
+            >
+              <Save className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="w-px h-6 bg-light-border dark:bg-dark-border mx-1" />
+
           {/* Theme Toggle */}
           <button
             onClick={toggleTheme}
@@ -115,15 +202,6 @@ export default function WorkspacePage() {
             ) : (
               <Moon className="w-4 h-4 text-slate-600" />
             )}
-          </button>
-
-          <button
-            onClick={handleSave}
-            className="flex items-center gap-2 px-3 py-1.5 bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-lg hover:bg-light-hover dark:hover:bg-dark-hover transition-colors text-sm"
-            title="Save to Browser"
-          >
-            <Save className="w-4 h-4" />
-            <span className="hidden sm:inline">Save</span>
           </button>
 
           {/* Export dropdown */}
@@ -176,16 +254,6 @@ export default function WorkspacePage() {
               </>
             )}
           </div>
-
-          <div className="w-px h-6 bg-light-border dark:bg-dark-border mx-2" />
-
-          <button
-            onClick={() => router.push('/')}
-            className="flex items-center gap-2 px-3 py-1.5 bg-accent-primary hover:bg-accent-primary-dark text-white rounded-lg transition-colors text-sm"
-          >
-            <Home className="w-4 h-4" />
-            <span className="hidden sm:inline">New Model</span>
-          </button>
         </div>
       </header>
 
