@@ -48,6 +48,7 @@ graph LR
 | Properties Panel | Inline editing of all properties |
 | SQL DDL Export | Export to PostgreSQL, MySQL, SQL Server, Oracle, SQLite |
 | SQL Import | Reverse engineer ERD from existing SQL DDL files |
+| Image Export | Export diagrams as PNG, SVG, or copy to clipboard |
 | Light/Dark Mode | Toggle between themes |
 | Auto-Layout | Smart entity positioning |
 | Persistence | Auto-save to browser storage |
@@ -381,6 +382,9 @@ mindmap
             JSON Export
             SQL DDL Export
             Multi-Database Support
+            PNG Image Export
+            SVG Vector Export
+            Copy to Clipboard
         Persistence
             Auto-save to LocalStorage
             Model Reload
@@ -441,6 +445,32 @@ Import existing SQL DDL files to generate ERD diagrams:
 2. Select a .sql file containing CREATE TABLE statements
 3. AI analyzes the DDL and generates the ERD
 4. Review and edit the generated model as needed
+
+### Image Export (PNG/SVG)
+
+Export your diagrams as images for documentation, presentations, or sharing:
+
+| Format | Description |
+|--------|-------------|
+| PNG | High-resolution raster image (2x scale for crisp display) |
+| SVG | Scalable vector graphic (infinitely scalable, editable) |
+| Clipboard | Copy PNG directly to clipboard for pasting |
+
+**How to Export:**
+1. Click the "Export" dropdown in the workspace header
+2. Choose your format:
+   - **Export PNG** - Downloads a high-res PNG image
+   - **Export SVG** - Downloads a scalable vector file
+   - **Copy to Clipboard** - Copies PNG to clipboard for pasting
+3. The exported image includes all entities and relationships with proper styling
+
+**Export Features:**
+- White background with subtle border
+- Automatic bounding box calculation
+- 40px padding around content
+- Crow's foot notation for relationships
+- Entity category colors preserved
+- Primary/foreign key icons included
 
 ### Properties Panel
 
@@ -598,6 +628,7 @@ ai-data-modeler/
 │   │   ├── groq.ts               # Groq client
 │   │   ├── autoLayout.ts         # Entity positioning
 │   │   ├── ddlGenerator.ts       # SQL DDL generation
+│   │   ├── imageExport.ts        # PNG/SVG export
 │   │   └── prompts/              # AI prompts
 │   └── types/
 │       ├── model.ts              # Data types
@@ -712,9 +743,13 @@ timeline
                    : Multi-database parsing
                    : AI-powered extraction
 
-    section Phase 5 - Future
-        Export     : PNG/SVG image export
-                   : PDF documentation
+    section Phase 5 - Image Export ✅
+        Image Export : PNG export (2x resolution)
+                     : SVG vector export
+                     : Copy to clipboard
+
+    section Phase 6 - Future
+        Documentation : PDF documentation
         Collaboration : Real-time collaboration
                       : Share links
         Advanced   : Undo/redo
@@ -730,9 +765,9 @@ timeline
 | High | Properties panel | ✅ Complete |
 | High | Light/Dark mode | ✅ Complete |
 | High | SQL Import / Reverse engineering | ✅ Complete |
+| High | PNG/SVG image export | ✅ Complete |
 | Medium | Inline editing | ✅ Complete |
 | Medium | Keyboard shortcuts | ✅ Complete |
-| Medium | PNG/SVG image export | Planned |
 | Medium | Undo/Redo system | Planned |
 | Low | Real-time collaboration | Future |
 | Low | Template library | Future |

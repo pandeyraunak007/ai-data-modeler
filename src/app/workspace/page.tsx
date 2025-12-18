@@ -21,7 +21,11 @@ import {
   FolderOpen,
   Upload,
   Loader2,
+  Image,
+  FileImage,
+  Copy,
 } from 'lucide-react';
+import { exportAsPng, exportAsSvg, copyAsPng } from '@/lib/imageExport';
 
 export default function WorkspacePage() {
   const router = useRouter();
@@ -30,8 +34,50 @@ export default function WorkspacePage() {
   const [showDDLModal, setShowDDLModal] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [isImportingSql, setIsImportingSql] = useState(false);
+  const [isExportingImage, setIsExportingImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const sqlFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Image export handlers
+  const handleExportPng = async () => {
+    if (!model) return;
+    setIsExportingImage(true);
+    try {
+      await exportAsPng(model);
+    } catch (err) {
+      console.error('Failed to export PNG:', err);
+      alert('Failed to export PNG. Please try again.');
+    } finally {
+      setIsExportingImage(false);
+      setShowExportMenu(false);
+    }
+  };
+
+  const handleExportSvg = () => {
+    if (!model) return;
+    try {
+      exportAsSvg(model);
+    } catch (err) {
+      console.error('Failed to export SVG:', err);
+      alert('Failed to export SVG. Please try again.');
+    }
+    setShowExportMenu(false);
+  };
+
+  const handleCopyPng = async () => {
+    if (!model) return;
+    setIsExportingImage(true);
+    try {
+      await copyAsPng(model);
+      alert('Diagram copied to clipboard!');
+    } catch (err) {
+      console.error('Failed to copy PNG:', err);
+      alert('Failed to copy to clipboard. Please try again.');
+    } finally {
+      setIsExportingImage(false);
+      setShowExportMenu(false);
+    }
+  };
 
   // Redirect to home if no model
   useEffect(() => {
@@ -284,7 +330,48 @@ export default function WorkspacePage() {
                   className="fixed inset-0 z-10"
                   onClick={() => setShowExportMenu(false)}
                 />
-                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-dark-card border border-light-border dark:border-dark-border rounded-xl shadow-xl z-20 overflow-hidden">
+                <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-dark-card border border-light-border dark:border-dark-border rounded-xl shadow-xl z-20 overflow-hidden">
+                  {/* Image Export Section */}
+                  <div className="px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 dark:bg-dark-hover">
+                    Image
+                  </div>
+                  <button
+                    onClick={handleExportPng}
+                    disabled={isExportingImage}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-left hover:bg-light-hover dark:hover:bg-dark-hover transition-colors disabled:opacity-50"
+                  >
+                    <Image className="w-4 h-4 text-green-600" />
+                    <div>
+                      <div className="font-medium">Export PNG</div>
+                      <div className="text-xs text-gray-500">High-res image (2x)</div>
+                    </div>
+                  </button>
+                  <button
+                    onClick={handleExportSvg}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-left hover:bg-light-hover dark:hover:bg-dark-hover transition-colors"
+                  >
+                    <FileImage className="w-4 h-4 text-purple-600" />
+                    <div>
+                      <div className="font-medium">Export SVG</div>
+                      <div className="text-xs text-gray-500">Scalable vector</div>
+                    </div>
+                  </button>
+                  <button
+                    onClick={handleCopyPng}
+                    disabled={isExportingImage}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-left hover:bg-light-hover dark:hover:bg-dark-hover transition-colors disabled:opacity-50"
+                  >
+                    <Copy className="w-4 h-4 text-blue-600" />
+                    <div>
+                      <div className="font-medium">Copy to Clipboard</div>
+                      <div className="text-xs text-gray-500">PNG image</div>
+                    </div>
+                  </button>
+
+                  {/* Data Export Section */}
+                  <div className="px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 dark:bg-dark-hover border-t border-light-border dark:border-dark-border">
+                    Data
+                  </div>
                   <button
                     onClick={() => {
                       handleExport();
@@ -298,7 +385,6 @@ export default function WorkspacePage() {
                       <div className="text-xs text-gray-500">Model data file</div>
                     </div>
                   </button>
-                  <div className="border-t border-light-border dark:border-dark-border" />
                   <button
                     onClick={() => {
                       setShowDDLModal(true);
