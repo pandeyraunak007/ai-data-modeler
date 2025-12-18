@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useModel } from '@/context/ModelContext';
 import { useTheme } from '@/context/ThemeContext';
 import DiagramCanvas from '@/components/canvas/DiagramCanvas';
+import PropertiesPanel from '@/components/properties/PropertiesPanel';
 import ChatPanel from '@/components/chat/ChatPanel';
 import DDLExportModal from '@/components/DDLExportModal';
 import {
@@ -192,6 +193,9 @@ export default function WorkspacePage() {
       <div className="flex-1 flex overflow-hidden">
         {/* Canvas */}
         <DiagramCanvas />
+
+        {/* Properties Panel */}
+        <PropertiesPanel />
 
         {/* Chat Panel */}
         <ChatPanel />
