@@ -522,6 +522,11 @@ export default function LandingPage() {
               </span>
             </div>
           </div>
+          <div className="mt-4 pt-4 border-t border-light-border dark:border-dark-border text-center">
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              Created by <span className="font-medium text-accent-primary">Raunak Pandey</span>
+            </span>
+          </div>
         </div>
       </footer>
     </div>
