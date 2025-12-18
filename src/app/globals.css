@@ -1,0 +1,210 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base styles */
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+.dark {
+  --background: #0C0C0C;
+  --foreground: #ededed;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #3a3a3a;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #4a4a4a;
+}
+
+/* Canvas grid pattern */
+.canvas-grid {
+  background-image:
+    linear-gradient(to right, #1a1a1a 1px, transparent 1px),
+    linear-gradient(to bottom, #1a1a1a 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Entity card styles */
+.entity-card {
+  @apply bg-dark-card border border-dark-border rounded-lg shadow-lg;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.entity-card:hover {
+  @apply border-accent-primary/50;
+  box-shadow: 0 0 20px rgba(94, 106, 210, 0.2);
+}
+
+.entity-card.selected {
+  @apply border-accent-primary;
+  box-shadow: 0 0 20px rgba(94, 106, 210, 0.4);
+}
+
+/* Attribute row styles */
+.attribute-row {
+  @apply flex items-center px-2 py-1 text-sm;
+}
+
+.attribute-row:nth-child(even) {
+  @apply bg-white/5;
+}
+
+.attribute-row.pk {
+  @apply font-medium;
+}
+
+.attribute-row.fk {
+  @apply text-accent-info;
+}
+
+/* Chat message styles */
+.chat-message {
+  @apply p-3 rounded-lg max-w-[85%];
+}
+
+.chat-message.user {
+  @apply bg-accent-primary text-white ml-auto;
+}
+
+.chat-message.assistant {
+  @apply bg-dark-card border border-dark-border;
+}
+
+/* Toolbar button styles */
+.toolbar-btn {
+  @apply p-2 rounded-lg hover:bg-dark-hover transition-colors;
+}
+
+.toolbar-btn.active {
+  @apply bg-accent-primary text-white;
+}
+
+/* Prompt input styles */
+.prompt-input {
+  @apply w-full bg-dark-card border border-dark-border rounded-xl p-4 text-lg;
+  @apply focus:outline-none focus:ring-2 focus:ring-accent-primary focus:border-transparent;
+  @apply placeholder:text-gray-500 resize-none;
+}
+
+/* Panel styles */
+.panel {
+  @apply bg-dark-bg border-dark-border;
+}
+
+.panel-header {
+  @apply flex items-center justify-between px-4 py-3 border-b border-dark-border;
+}
+
+/* Relationship line styles */
+.relationship-line {
+  stroke: #666;
+  stroke-width: 2;
+  fill: none;
+}
+
+.relationship-line.identifying {
+  stroke: #5E6AD2;
+}
+
+.relationship-line.non-identifying {
+  stroke: #666;
+  stroke-dasharray: 8, 4;
+}
+
+.relationship-line:hover {
+  stroke: #5E6AD2;
+  stroke-width: 3;
+}
+
+/* Loading animation */
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.loading-pulse {
+  animation: pulse-glow 1.5s ease-in-out infinite;
+}
+
+/* Streaming text cursor */
+.streaming-cursor::after {
+  content: '|';
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* Mini map styles */
+.mini-map {
+  @apply absolute bottom-4 right-4 w-48 h-32 bg-dark-card/90 border border-dark-border rounded-lg;
+  @apply overflow-hidden backdrop-blur-sm;
+}
+
+.mini-map-viewport {
+  @apply absolute border-2 border-accent-primary/50 bg-accent-primary/10;
+}
+
+/* Tree view styles */
+.tree-item {
+  @apply flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer;
+  @apply hover:bg-dark-hover transition-colors;
+}
+
+.tree-item.selected {
+  @apply bg-accent-primary/20 text-accent-primary;
+}
+
+/* DDL code block */
+.ddl-code {
+  @apply font-mono text-sm bg-dark-card p-4 rounded-lg overflow-x-auto;
+  @apply border border-dark-border;
+}
+
+.ddl-code .keyword {
+  @apply text-accent-primary font-semibold;
+}
+
+.ddl-code .type {
+  @apply text-accent-success;
+}
+
+.ddl-code .string {
+  @apply text-accent-warning;
+}
+
+.ddl-code .comment {
+  @apply text-gray-500 italic;
+}

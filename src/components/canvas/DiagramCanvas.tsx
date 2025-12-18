@@ -1,0 +1,316 @@
+'use client';
+
+import React, { useRef, useState, useCallback, useEffect } from 'react';
+import { useModel } from '@/context/ModelContext';
+import EntityCard from './EntityCard';
+import RelationshipLine from './RelationshipLine';
+import CanvasToolbar from './CanvasToolbar';
+
+const MIN_ZOOM = 0.1;
+const MAX_ZOOM = 3;
+const ZOOM_STEP = 0.1;
+
+export default function DiagramCanvas() {
+  const svgRef = useRef<SVGSVGElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const {
+    model,
+    selectedEntityId,
+    selectedRelationshipId,
+    selectEntity,
+    selectRelationship,
+    updateEntity,
+  } = useModel();
+
+  // Canvas state
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [tool, setTool] = useState<'select' | 'pan'>('select');
+  const [showGrid, setShowGrid] = useState(true);
+
+  // Drag state
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragType, setDragType] = useState<'entity' | 'pan' | null>(null);
+  const [dragEntityId, setDragEntityId] = useState<string | null>(null);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+
+  // Handle zoom
+  const handleZoomIn = useCallback(() => {
+    setZoom((z) => Math.min(MAX_ZOOM, z + ZOOM_STEP));
+  }, []);
+
+  const handleZoomOut = useCallback(() => {
+    setZoom((z) => Math.max(MIN_ZOOM, z - ZOOM_STEP));
+  }, []);
+
+  const handleZoomReset = useCallback(() => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+  }, []);
+
+  const handleFitToScreen = useCallback(() => {
+    if (!model || !containerRef.current || model.entities.length === 0) return;
+
+    const container = containerRef.current.getBoundingClientRect();
+
+    // Calculate bounding box of all entities
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    model.entities.forEach((e) => {
+      minX = Math.min(minX, e.x);
+      minY = Math.min(minY, e.y);
+      maxX = Math.max(maxX, e.x + e.width);
+      maxY = Math.max(maxY, e.y + e.height);
+    });
+
+    const contentWidth = maxX - minX + 100;
+    const contentHeight = maxY - minY + 100;
+
+    const scaleX = container.width / contentWidth;
+    const scaleY = container.height / contentHeight;
+    const newZoom = Math.min(scaleX, scaleY, 1);
+
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+
+    setZoom(newZoom);
+    setPan({
+      x: container.width / 2 - centerX * newZoom,
+      y: container.height / 2 - centerY * newZoom,
+    });
+  }, [model]);
+
+  // Handle wheel zoom
+  const handleWheel = useCallback((e: React.WheelEvent) => {
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP;
+      setZoom((z) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, z + delta)));
+    }
+  }, []);
+
+  // Mouse event handlers
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      if (e.button !== 0) return;
+
+      const rect = svgRef.current?.getBoundingClientRect();
+      if (!rect) return;
+
+      const x = (e.clientX - rect.left - pan.x) / zoom;
+      const y = (e.clientY - rect.top - pan.y) / zoom;
+
+      if (tool === 'pan') {
+        setIsDragging(true);
+        setDragType('pan');
+        setDragStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
+      }
+    },
+    [tool, pan, zoom]
+  );
+
+  const handleEntityDragStart = useCallback(
+    (entityId: string, e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (tool !== 'select') return;
+
+      const entity = model?.entities.find((en) => en.id === entityId);
+      if (!entity) return;
+
+      const rect = svgRef.current?.getBoundingClientRect();
+      if (!rect) return;
+
+      const x = (e.clientX - rect.left - pan.x) / zoom;
+      const y = (e.clientY - rect.top - pan.y) / zoom;
+
+      setIsDragging(true);
+      setDragType('entity');
+      setDragEntityId(entityId);
+      setDragOffset({ x: x - entity.x, y: y - entity.y });
+      selectEntity(entityId);
+    },
+    [tool, model, pan, zoom, selectEntity]
+  );
+
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent) => {
+      if (!isDragging) return;
+
+      if (dragType === 'pan') {
+        setPan({
+          x: e.clientX - dragStart.x,
+          y: e.clientY - dragStart.y,
+        });
+      } else if (dragType === 'entity' && dragEntityId) {
+        const rect = svgRef.current?.getBoundingClientRect();
+        if (!rect) return;
+
+        const x = (e.clientX - rect.left - pan.x) / zoom;
+        const y = (e.clientY - rect.top - pan.y) / zoom;
+
+        updateEntity(dragEntityId, {
+          x: Math.max(0, x - dragOffset.x),
+          y: Math.max(0, y - dragOffset.y),
+        });
+      }
+    },
+    [isDragging, dragType, dragStart, dragEntityId, dragOffset, pan, zoom, updateEntity]
+  );
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+    setDragType(null);
+    setDragEntityId(null);
+  }, []);
+
+  // Handle click on canvas background to deselect
+  const handleCanvasClick = useCallback(
+    (e: React.MouseEvent) => {
+      if (e.target === svgRef.current || (e.target as HTMLElement).classList.contains('canvas-background')) {
+        selectEntity(null);
+        selectRelationship(null);
+      }
+    },
+    [selectEntity, selectRelationship]
+  );
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+      switch (e.key) {
+        case 'v':
+        case 'V':
+          setTool('select');
+          break;
+        case 'h':
+        case 'H':
+          setTool('pan');
+          break;
+        case '+':
+        case '=':
+          handleZoomIn();
+          break;
+        case '-':
+        case '_':
+          handleZoomOut();
+          break;
+        case '0':
+          handleZoomReset();
+          break;
+        case 'Delete':
+        case 'Backspace':
+          // Handle delete in context
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleZoomIn, handleZoomOut, handleZoomReset]);
+
+  if (!model) {
+    return (
+      <div className="flex-1 flex items-center justify-center bg-dark-bg text-gray-500">
+        <p>No model loaded. Generate one from the home page.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      ref={containerRef}
+      className="flex-1 relative overflow-hidden bg-dark-bg"
+    >
+      <svg
+        ref={svgRef}
+        className={`w-full h-full ${isDragging ? 'cursor-grabbing' : tool === 'pan' ? 'cursor-grab' : 'cursor-default'}`}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+        onWheel={handleWheel}
+        onClick={handleCanvasClick}
+      >
+        {/* Background grid */}
+        {showGrid && (
+          <defs>
+            <pattern
+              id="grid"
+              width={20 * zoom}
+              height={20 * zoom}
+              patternUnits="userSpaceOnUse"
+            >
+              <path
+                d={`M ${20 * zoom} 0 L 0 0 0 ${20 * zoom}`}
+                fill="none"
+                stroke="#1a1a1a"
+                strokeWidth="1"
+              />
+            </pattern>
+          </defs>
+        )}
+        <rect
+          className="canvas-background"
+          width="100%"
+          height="100%"
+          fill={showGrid ? 'url(#grid)' : '#0C0C0C'}
+        />
+
+        {/* Main content group with pan and zoom */}
+        <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
+          {/* Relationship lines (rendered first, behind entities) */}
+          {model.relationships.map((rel) => {
+            const sourceEntity = model.entities.find((e) => e.id === rel.sourceEntityId);
+            const targetEntity = model.entities.find((e) => e.id === rel.targetEntityId);
+            if (!sourceEntity || !targetEntity) return null;
+
+            return (
+              <RelationshipLine
+                key={rel.id}
+                relationship={rel}
+                sourceEntity={sourceEntity}
+                targetEntity={targetEntity}
+                isSelected={selectedRelationshipId === rel.id}
+                onSelect={() => selectRelationship(rel.id)}
+              />
+            );
+          })}
+
+          {/* Entity cards */}
+          {model.entities.map((entity) => (
+            <EntityCard
+              key={entity.id}
+              entity={entity}
+              isSelected={selectedEntityId === entity.id}
+              onSelect={() => selectEntity(entity.id)}
+              onDragStart={(e) => handleEntityDragStart(entity.id, e)}
+            />
+          ))}
+        </g>
+      </svg>
+
+      {/* Toolbar */}
+      <CanvasToolbar
+        zoom={zoom}
+        onZoomIn={handleZoomIn}
+        onZoomOut={handleZoomOut}
+        onZoomReset={handleZoomReset}
+        onFitToScreen={handleFitToScreen}
+        tool={tool}
+        onToolChange={setTool}
+        showGrid={showGrid}
+        onToggleGrid={() => setShowGrid((s) => !s)}
+      />
+
+      {/* Model info */}
+      <div className="absolute bottom-4 left-4 bg-dark-card/90 backdrop-blur-sm border border-dark-border rounded-lg px-3 py-2 text-sm">
+        <span className="text-gray-400">
+          {model.entities.length} entities · {model.relationships.length} relationships
+        </span>
+      </div>
+    </div>
+  );
+}
