@@ -9,6 +9,7 @@ import CanvasToolbar from './CanvasToolbar';
 import CanvasBottomBar from './CanvasBottomBar';
 import EntityEditModal from './EntityEditModal';
 import RelationshipEditModal from './RelationshipEditModal';
+import MiniMap from './MiniMap';
 import { autoLayoutEntities, smartLayout, minimizeCrossings } from '@/lib/autoLayout';
 
 const MIN_ZOOM = 0.1;
@@ -52,6 +53,32 @@ export default function DiagramCanvas() {
   const [dragEntityId, setDragEntityId] = useState<string | null>(null);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+
+  // Container dimensions for minimap
+  const [containerDimensions, setContainerDimensions] = useState({ width: 0, height: 0 });
+
+  // Track container dimensions
+  useEffect(() => {
+    const updateDimensions = () => {
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        setContainerDimensions({ width: rect.width, height: rect.height });
+      }
+    };
+
+    updateDimensions();
+    const resizeObserver = new ResizeObserver(updateDimensions);
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+
+    return () => resizeObserver.disconnect();
+  }, []);
+
+  // Handle minimap navigation
+  const handleMiniMapNavigate = useCallback((newPan: { x: number; y: number }) => {
+    setPan(newPan);
+  }, []);
 
   // Handle zoom
   const handleZoomIn = useCallback(() => {
@@ -561,6 +588,20 @@ export default function DiagramCanvas() {
         onLayoutMinimize={() => handleAutoLayout('minimize')}
         disabled={model.entities.length === 0}
       />
+
+      {/* MiniMap */}
+      {model.entities.length > 0 && (
+        <MiniMap
+          entities={model.entities}
+          relationships={model.relationships}
+          zoom={zoom}
+          pan={pan}
+          containerWidth={containerDimensions.width}
+          containerHeight={containerDimensions.height}
+          onNavigate={handleMiniMapNavigate}
+          selectedEntityId={selectedEntityId}
+        />
+      )}
 
       {/* Entity Edit Modal */}
       {editingEntity && (

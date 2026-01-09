@@ -29,6 +29,7 @@ import {
   Keyboard,
   ShieldCheck,
   Sparkles,
+  Share2,
 } from 'lucide-react';
 import { exportAsPng, exportAsSvg, copyAsPng } from '@/lib/imageExport';
 import { ChangeHistoryPanel } from '@/components/history';
@@ -37,7 +38,9 @@ import { SearchPanel } from '@/components/search';
 import { KeyboardShortcutsHelp } from '@/components/shortcuts';
 import { ModelValidation } from '@/components/validation';
 import { TemplateSelector } from '@/components/templates';
+import { ShareModal } from '@/components/share';
 import { generateModelFromTemplate } from '@/lib/templates';
+import { extractSharedModel } from '@/lib/shareUtils';
 
 export default function WorkspacePage() {
   const router = useRouter();
@@ -52,8 +55,21 @@ export default function WorkspacePage() {
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
   const [showValidation, setShowValidation] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const sqlFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Load shared model from URL on mount
+  useEffect(() => {
+    const sharedModel = extractSharedModel();
+    if (sharedModel) {
+      setModel(sharedModel);
+      // Clean up URL to remove share parameter
+      const url = new URL(window.location.href);
+      url.searchParams.delete('share');
+      window.history.replaceState({}, '', url.pathname);
+    }
+  }, [setModel]);
 
   // Global keyboard shortcuts
   useEffect(() => {
@@ -411,6 +427,16 @@ export default function WorkspacePage() {
             <Keyboard className="w-4 h-4 text-gray-600 dark:text-gray-400" aria-hidden="true" />
           </button>
 
+          {/* Share Button */}
+          <button
+            onClick={() => setShowShareModal(true)}
+            className="p-2 rounded-lg bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border hover:bg-light-hover dark:hover:bg-dark-hover transition-colors"
+            title="Share Model"
+            aria-label="Share model via URL"
+          >
+            <Share2 className="w-4 h-4 text-gray-600 dark:text-gray-400" aria-hidden="true" />
+          </button>
+
           {/* Theme Toggle */}
           <button
             onClick={toggleTheme}
@@ -596,6 +622,13 @@ export default function WorkspacePage() {
         isOpen={showTemplates}
         onClose={() => setShowTemplates(false)}
         onSelect={handleTemplateSelect}
+      />
+
+      {/* Share Modal */}
+      <ShareModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        model={model}
       />
     </div>
   );
