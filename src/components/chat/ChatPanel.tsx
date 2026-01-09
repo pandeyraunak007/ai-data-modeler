@@ -12,10 +12,13 @@ import SuggestionChips from './SuggestionChips';
 import { ActionPreviewCard, ConfirmationModal, ImpactDetailsModal } from '@/components/proposal';
 import { MessageSquare, X, Trash2, ChevronDown } from 'lucide-react';
 
-export default function ChatPanel() {
+interface ChatPanelProps {
+  onCollapse?: () => void;
+}
+
+export default function ChatPanel({ onCollapse }: ChatPanelProps) {
   const [messages, setMessages] = useState<ChatMessageType[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
@@ -427,17 +430,6 @@ export default function ChatPanel() {
     setIsAtBottom(true);
   };
 
-  if (isCollapsed) {
-    return (
-      <button
-        onClick={() => setIsCollapsed(false)}
-        className="fixed bottom-4 right-4 w-14 h-14 bg-accent-primary hover:bg-accent-primary/90 rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-105"
-      >
-        <MessageSquare className="w-6 h-6 text-white" />
-      </button>
-    );
-  }
-
   return (
     <>
       <div className="w-full bg-white dark:bg-dark-bg flex flex-col h-full relative">
@@ -455,12 +447,15 @@ export default function ChatPanel() {
             >
               <Trash2 className="w-4 h-4 text-gray-500" />
             </button>
-            <button
-              onClick={() => setIsCollapsed(true)}
-              className="p-1.5 hover:bg-light-hover dark:hover:bg-dark-hover rounded transition-colors"
-            >
-              <X className="w-4 h-4 text-gray-500" />
-            </button>
+            {onCollapse && (
+              <button
+                onClick={onCollapse}
+                className="p-1.5 hover:bg-light-hover dark:hover:bg-dark-hover rounded transition-colors"
+                title="Hide Chat"
+              >
+                <X className="w-4 h-4 text-gray-500" />
+              </button>
+            )}
           </div>
         </div>
 

@@ -30,6 +30,8 @@ import {
   ShieldCheck,
   Sparkles,
   Share2,
+  Settings2,
+  MessageSquare,
 } from 'lucide-react';
 import { exportAsPng, exportAsSvg, copyAsPng } from '@/lib/imageExport';
 import { ChangeHistoryPanel } from '@/components/history';
@@ -561,7 +563,7 @@ export default function WorkspacePage() {
         {/* Canvas */}
         <DiagramCanvas />
 
-        {/* Properties Panel - Resizable */}
+        {/* Properties Panel - Resizable & Collapsible */}
         <ResizablePanel
           side="right"
           defaultWidth={320}
@@ -569,11 +571,15 @@ export default function WorkspacePage() {
           maxWidth={500}
           storageKey="ai-dm-properties-width"
           className="border-l border-light-border dark:border-dark-border"
+          collapsible
+          collapsedWidth={40}
+          title="Properties"
+          icon={<Settings2 className="w-5 h-5" />}
         >
           <PropertiesPanel />
         </ResizablePanel>
 
-        {/* Chat Panel - Resizable */}
+        {/* Chat Panel - Resizable & Collapsible */}
         <ResizablePanel
           side="right"
           defaultWidth={320}
@@ -581,6 +587,10 @@ export default function WorkspacePage() {
           maxWidth={500}
           storageKey="ai-dm-chat-width"
           className="border-l border-light-border dark:border-dark-border"
+          collapsible
+          collapsedWidth={40}
+          title="AI Chat"
+          icon={<MessageSquare className="w-5 h-5" />}
         >
           <ChatPanel />
         </ResizablePanel>

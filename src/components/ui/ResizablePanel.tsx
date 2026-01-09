@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { GripVertical } from 'lucide-react';
+import { GripVertical, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface ResizablePanelProps {
   children: React.ReactNode;
@@ -11,6 +11,12 @@ interface ResizablePanelProps {
   maxWidth: number;
   storageKey?: string;
   className?: string;
+  collapsible?: boolean;
+  collapsedWidth?: number;
+  title?: string;
+  icon?: React.ReactNode;
+  isCollapsed?: boolean;
+  onCollapsedChange?: (collapsed: boolean) => void;
 }
 
 export default function ResizablePanel({
@@ -21,12 +27,23 @@ export default function ResizablePanel({
   maxWidth,
   storageKey,
   className = '',
+  collapsible = false,
+  collapsedWidth = 40,
+  title,
+  icon,
+  isCollapsed: controlledIsCollapsed,
+  onCollapsedChange,
 }: ResizablePanelProps) {
   const [width, setWidth] = useState(defaultWidth);
   const [isResizing, setIsResizing] = useState(false);
+  const [internalIsCollapsed, setInternalIsCollapsed] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // Load saved width from localStorage
+  // Support both controlled and uncontrolled collapse state
+  const isCollapsed = controlledIsCollapsed !== undefined ? controlledIsCollapsed : internalIsCollapsed;
+  const setIsCollapsed = onCollapsedChange || setInternalIsCollapsed;
+
+  // Load saved width and collapse state from localStorage
   useEffect(() => {
     if (storageKey) {
       const saved = localStorage.getItem(storageKey);
@@ -36,8 +53,15 @@ export default function ResizablePanel({
           setWidth(savedWidth);
         }
       }
+      // Load collapse state
+      if (collapsible) {
+        const savedCollapsed = localStorage.getItem(`${storageKey}-collapsed`);
+        if (savedCollapsed === 'true') {
+          setInternalIsCollapsed(true);
+        }
+      }
     }
-  }, [storageKey, minWidth, maxWidth]);
+  }, [storageKey, minWidth, maxWidth, collapsible]);
 
   // Save width to localStorage
   useEffect(() => {
@@ -45,6 +69,13 @@ export default function ResizablePanel({
       localStorage.setItem(storageKey, width.toString());
     }
   }, [width, storageKey, isResizing]);
+
+  // Save collapse state to localStorage
+  useEffect(() => {
+    if (storageKey && collapsible) {
+      localStorage.setItem(`${storageKey}-collapsed`, isCollapsed.toString());
+    }
+  }, [storageKey, collapsible, isCollapsed]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -93,6 +124,59 @@ export default function ResizablePanel({
     };
   }, [isResizing, handleMouseMove, handleMouseUp]);
 
+  // Toggle collapse state
+  const toggleCollapse = useCallback(() => {
+    setIsCollapsed(!isCollapsed);
+  }, [isCollapsed, setIsCollapsed]);
+
+  // Collapsed view
+  if (collapsible && isCollapsed) {
+    return (
+      <div
+        className={`relative flex-shrink-0 ${className}`}
+        style={{ width: collapsedWidth }}
+      >
+        <div className="h-full bg-light-card dark:bg-dark-card flex flex-col items-center py-4 border-l border-light-border dark:border-dark-border">
+          {/* Expand button */}
+          <button
+            onClick={toggleCollapse}
+            className="p-2 rounded-lg hover:bg-light-hover dark:hover:bg-dark-hover transition-colors group"
+            title={title ? `Show ${title}` : 'Expand panel'}
+          >
+            {side === 'right' ? (
+              <ChevronLeft className="w-4 h-4 text-gray-500 group-hover:text-accent-primary" />
+            ) : (
+              <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-accent-primary" />
+            )}
+          </button>
+
+          {/* Icon if provided */}
+          {icon && (
+            <div className="mt-2 p-2 text-gray-400">
+              {icon}
+            </div>
+          )}
+
+          {/* Vertical title */}
+          {title && (
+            <div className="mt-4 flex-1 flex items-center">
+              <span
+                className="text-xs font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap"
+                style={{
+                  writingMode: 'vertical-rl',
+                  textOrientation: 'mixed',
+                  transform: 'rotate(180deg)',
+                }}
+              >
+                {title}
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       ref={panelRef}
@@ -127,8 +211,21 @@ export default function ResizablePanel({
         />
       </div>
 
-      {/* Content */}
-      <div className="h-full overflow-hidden">{children}</div>
+      {/* Content with collapse button injected */}
+      <div className="h-full overflow-hidden">
+        {collapsible ? (
+          React.Children.map(children, (child) => {
+            if (React.isValidElement(child)) {
+              return React.cloneElement(child as React.ReactElement<any>, {
+                onCollapse: toggleCollapse,
+              });
+            }
+            return child;
+          })
+        ) : (
+          children
+        )}
+      </div>
     </div>
   );
 }
