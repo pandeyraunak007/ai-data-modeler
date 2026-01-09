@@ -9,7 +9,6 @@ import {
   Check,
   AlertTriangle,
   Link,
-  QrCode,
   Loader2,
 } from 'lucide-react';
 import {
@@ -194,19 +193,6 @@ export default function ShareModal({ isOpen, onClose, model }: ShareModalProps) 
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   URL size: {urlSizeKb}KB • Anyone with this link can view and edit a copy of your model
                 </p>
-              </div>
-
-              {/* Instructions */}
-              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
-                <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2">
-                  How it works
-                </h4>
-                <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
-                  <li>• The model data is encoded directly in the URL</li>
-                  <li>• No server storage required - completely client-side</li>
-                  <li>• Recipients get their own editable copy</li>
-                  <li>• Changes they make won&apos;t affect your original</li>
-                </ul>
               </div>
             </>
           )}
