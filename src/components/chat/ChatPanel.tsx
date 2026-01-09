@@ -10,13 +10,18 @@ import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
 import SuggestionChips from './SuggestionChips';
 import { ActionPreviewCard, ConfirmationModal, ImpactDetailsModal } from '@/components/proposal';
-import { MessageSquare, X, Trash2 } from 'lucide-react';
+import { MessageSquare, X, Trash2, ChevronDown } from 'lucide-react';
 
 export default function ChatPanel() {
   const [messages, setMessages] = useState<ChatMessageType[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+
+  // Scroll tracking state
+  const [isAtBottom, setIsAtBottom] = useState(true);
+  const [newMessageCount, setNewMessageCount] = useState(0);
 
   // Proposal state - NO auto-apply, user must confirm
   const [pendingProposal, setPendingProposal] = useState<ModificationProposal | null>(null);
@@ -26,10 +31,56 @@ export default function ChatPanel() {
 
   const { model, updateEntity, addEntity, deleteEntity, addRelationship, deleteRelationship, updateRelationship } = useModel();
 
-  // Scroll to bottom when messages change
+  // Check if user is at bottom of scroll
+  const checkIfAtBottom = useCallback(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return true;
+
+    const threshold = 100; // pixels from bottom to consider "at bottom"
+    const isBottom = container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
+    return isBottom;
+  }, []);
+
+  // Handle scroll events
+  const handleScroll = useCallback(() => {
+    const atBottom = checkIfAtBottom();
+    setIsAtBottom(atBottom);
+
+    // Clear new message count when user scrolls to bottom
+    if (atBottom) {
+      setNewMessageCount(0);
+    }
+  }, [checkIfAtBottom]);
+
+  // Track previous message count to detect new messages
+  const prevMessageCountRef = useRef(messages.length);
+
+  // Smart scroll to bottom - only if user is already at bottom
   useEffect(() => {
+    const hasNewMessages = messages.length > prevMessageCountRef.current;
+    prevMessageCountRef.current = messages.length;
+
+    if (isAtBottom) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    } else if (hasNewMessages) {
+      // User is scrolled up and there are new messages
+      setNewMessageCount(prev => prev + 1);
+    }
+  }, [messages.length, isAtBottom]);
+
+  // Also scroll when proposal changes and user is at bottom
+  useEffect(() => {
+    if (isAtBottom && pendingProposal) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [pendingProposal, isAtBottom]);
+
+  // Scroll to bottom handler
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, pendingProposal]);
+    setNewMessageCount(0);
+    setIsAtBottom(true);
+  }, []);
 
   // Apply model changes from AI response - ONLY called after user confirmation
   const applyChanges = useCallback((changes: any[]) => {
@@ -372,6 +423,8 @@ export default function ChatPanel() {
   const handleClearChat = () => {
     setMessages([]);
     setPendingProposal(null);
+    setNewMessageCount(0);
+    setIsAtBottom(true);
   };
 
   if (isCollapsed) {
@@ -387,7 +440,7 @@ export default function ChatPanel() {
 
   return (
     <>
-      <div className="w-full bg-white dark:bg-dark-bg flex flex-col h-full">
+      <div className="w-full bg-white dark:bg-dark-bg flex flex-col h-full relative">
         {/* Header */}
         <div className="panel-header">
           <div className="flex items-center gap-2">
@@ -412,7 +465,11 @@ export default function ChatPanel() {
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div
+          ref={messagesContainerRef}
+          onScroll={handleScroll}
+          className="flex-1 overflow-y-auto p-4 space-y-4 relative"
+        >
           {messages.length === 0 && !pendingProposal ? (
             <div className="text-center text-gray-500 py-8">
               <MessageSquare className="w-12 h-12 mx-auto mb-4 opacity-50" />
@@ -439,6 +496,23 @@ export default function ChatPanel() {
 
           <div ref={messagesEndRef} />
         </div>
+
+        {/* Scroll to Bottom Button */}
+        {!isAtBottom && messages.length > 0 && (
+          <div className="absolute bottom-36 left-1/2 -translate-x-1/2 z-10">
+            <button
+              onClick={scrollToBottom}
+              className="flex items-center gap-2 px-3 py-2 bg-accent-primary text-white rounded-full shadow-lg hover:bg-accent-primary-dark transition-all hover:scale-105"
+            >
+              <ChevronDown className="w-4 h-4" />
+              {newMessageCount > 0 && (
+                <span className="text-xs font-medium">
+                  {newMessageCount} new
+                </span>
+              )}
+            </button>
+          </div>
+        )}
 
         {/* Suggestions */}
         <div className="px-4 py-2 border-t border-light-border dark:border-dark-border">
