@@ -7,6 +7,8 @@ import { useTheme } from '@/context/ThemeContext';
 import { EXAMPLE_PROMPTS } from '@/types/chat';
 import { GenerationProposal, createGenerationProposal, ModelVariant } from '@/types/proposal';
 import { ConceptualOptionsPanel } from '@/components/proposal';
+import { TemplateSelector } from '@/components/templates';
+import { generateModelFromTemplate } from '@/lib/templates';
 import {
   Database,
   Sparkles,
@@ -34,6 +36,7 @@ import {
   Share2,
   Upload,
   FileCode,
+  Layout,
 } from 'lucide-react';
 
 const iconMap: Record<string, React.ReactNode> = {
@@ -95,6 +98,15 @@ export default function LandingPage() {
   // Proposal state for variant selection
   const [generationProposal, setGenerationProposal] = useState<GenerationProposal | null>(null);
   const [showProposalPanel, setShowProposalPanel] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
+
+  // Handle template selection
+  const handleTemplateSelect = useCallback((templateModel: ReturnType<typeof generateModelFromTemplate>) => {
+    if (templateModel) {
+      setModel(templateModel);
+      router.push('/workspace');
+    }
+  }, [setModel, router]);
 
   const handleGenerate = async () => {
     if (!prompt.trim()) return;
@@ -418,44 +430,63 @@ export default function LandingPage() {
               )}
             </button>
 
-            {/* Import SQL Section */}
+            {/* Alternative Options */}
             <div className="pt-6 border-t border-light-border dark:border-dark-border mt-6">
               <div className="text-center mb-4">
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Or import an existing database schema
+                  Or start from an existing source
                 </p>
               </div>
 
-              <label className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-light-border dark:border-dark-border rounded-2xl cursor-pointer hover:border-accent-primary/50 transition-all ${isImporting ? 'opacity-60 cursor-not-allowed' : ''}`} aria-label="Upload SQL file to reverse engineer">
-                <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                  {isImporting ? (
-                    <>
-                      <Loader2 className="w-8 h-8 mb-2 text-accent-primary animate-spin" aria-hidden="true" />
-                      <p className="text-sm text-gray-500 dark:text-gray-400" role="status">
-                        Analyzing SQL and generating ERD...
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <FileCode className="w-8 h-8 mb-2 text-gray-400 dark:text-gray-500" aria-hidden="true" />
-                      <p className="mb-1 text-sm text-gray-500 dark:text-gray-400">
-                        <span className="font-semibold text-accent-primary">Upload SQL file</span> to reverse engineer
-                      </p>
-                      <p className="text-xs text-gray-400 dark:text-gray-500">
-                        Supports PostgreSQL, MySQL, SQL Server, Oracle, SQLite
-                      </p>
-                    </>
-                  )}
-                </div>
-                <input
-                  type="file"
-                  accept=".sql"
-                  className="hidden"
-                  onChange={handleSqlFileUpload}
-                  disabled={isImporting || isLoading}
-                  aria-label="Select SQL file to import"
-                />
-              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Template Button */}
+                <button
+                  onClick={() => setShowTemplates(true)}
+                  disabled={isLoading || isImporting}
+                  className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-light-border dark:border-dark-border rounded-2xl hover:border-accent-primary/50 transition-all hover:bg-accent-primary/5 disabled:opacity-60 disabled:cursor-not-allowed"
+                  aria-label="Start from a pre-built template"
+                >
+                  <Layout className="w-8 h-8 mb-2 text-accent-primary" aria-hidden="true" />
+                  <p className="mb-1 text-sm text-gray-500 dark:text-gray-400">
+                    <span className="font-semibold text-accent-primary">Start from Template</span>
+                  </p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500">
+                    E-commerce, HR, CRM, Blog & more
+                  </p>
+                </button>
+
+                {/* Import SQL */}
+                <label className={`flex flex-col items-center justify-center h-32 border-2 border-dashed border-light-border dark:border-dark-border rounded-2xl cursor-pointer hover:border-accent-primary/50 transition-all ${isImporting ? 'opacity-60 cursor-not-allowed' : ''}`} aria-label="Upload SQL file to reverse engineer">
+                  <div className="flex flex-col items-center justify-center">
+                    {isImporting ? (
+                      <>
+                        <Loader2 className="w-8 h-8 mb-2 text-accent-primary animate-spin" aria-hidden="true" />
+                        <p className="text-sm text-gray-500 dark:text-gray-400" role="status">
+                          Analyzing SQL...
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <FileCode className="w-8 h-8 mb-2 text-gray-400 dark:text-gray-500" aria-hidden="true" />
+                        <p className="mb-1 text-sm text-gray-500 dark:text-gray-400">
+                          <span className="font-semibold text-accent-primary">Import SQL file</span>
+                        </p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500">
+                          PostgreSQL, MySQL, SQL Server & more
+                        </p>
+                      </>
+                    )}
+                  </div>
+                  <input
+                    type="file"
+                    accept=".sql"
+                    className="hidden"
+                    onChange={handleSqlFileUpload}
+                    disabled={isImporting || isLoading}
+                    aria-label="Select SQL file to import"
+                  />
+                </label>
+              </div>
             </div>
           </div>
         </section>
@@ -650,6 +681,13 @@ export default function LandingPage() {
           </div>
         </div>
       )}
+
+      {/* Template Selector Modal */}
+      <TemplateSelector
+        isOpen={showTemplates}
+        onClose={() => setShowTemplates(false)}
+        onSelect={handleTemplateSelect}
+      />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useModel } from '@/context/ModelContext';
 import { useTheme } from '@/context/ThemeContext';
@@ -25,10 +25,19 @@ import {
   FileImage,
   Copy,
   History,
+  Search,
+  Keyboard,
+  ShieldCheck,
+  Sparkles,
 } from 'lucide-react';
 import { exportAsPng, exportAsSvg, copyAsPng } from '@/lib/imageExport';
 import { ChangeHistoryPanel } from '@/components/history';
 import ResizablePanel from '@/components/ui/ResizablePanel';
+import { SearchPanel } from '@/components/search';
+import { KeyboardShortcutsHelp } from '@/components/shortcuts';
+import { ModelValidation } from '@/components/validation';
+import { TemplateSelector } from '@/components/templates';
+import { generateModelFromTemplate } from '@/lib/templates';
 
 export default function WorkspacePage() {
   const router = useRouter();
@@ -39,8 +48,51 @@ export default function WorkspacePage() {
   const [isImportingSql, setIsImportingSql] = useState(false);
   const [isExportingImage, setIsExportingImage] = useState(false);
   const [showHistoryPanel, setShowHistoryPanel] = useState(false);
+  const [showSearchPanel, setShowSearchPanel] = useState(false);
+  const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
+  const [showValidation, setShowValidation] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const sqlFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Global keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if typing in an input
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+        return;
+      }
+
+      // Ctrl+F - Open search
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault();
+        setShowSearchPanel(true);
+      }
+
+      // ? - Show keyboard shortcuts
+      if (e.key === '?' && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        setShowShortcutsHelp(true);
+      }
+
+      // Ctrl+H - Show history
+      if ((e.ctrlKey || e.metaKey) && e.key === 'h') {
+        e.preventDefault();
+        setShowHistoryPanel(true);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Handle template selection
+  const handleTemplateSelect = useCallback((templateModel: ReturnType<typeof generateModelFromTemplate>) => {
+    if (templateModel) {
+      setModel(templateModel);
+    }
+  }, [setModel]);
 
   // Image export handlers
   const handleExportPng = async () => {
@@ -309,6 +361,36 @@ export default function WorkspacePage() {
 
           <div className="w-px h-6 bg-light-border dark:bg-dark-border mx-1" />
 
+          {/* Search Button */}
+          <button
+            onClick={() => setShowSearchPanel(true)}
+            className="p-2 rounded-lg bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border hover:bg-light-hover dark:hover:bg-dark-hover transition-colors"
+            title="Search (Ctrl+F)"
+            aria-label="Search entities and attributes"
+          >
+            <Search className="w-4 h-4 text-gray-600 dark:text-gray-400" aria-hidden="true" />
+          </button>
+
+          {/* Validation Button */}
+          <button
+            onClick={() => setShowValidation(true)}
+            className="p-2 rounded-lg bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border hover:bg-light-hover dark:hover:bg-dark-hover transition-colors"
+            title="Validate Model"
+            aria-label="Validate model for issues"
+          >
+            <ShieldCheck className="w-4 h-4 text-gray-600 dark:text-gray-400" aria-hidden="true" />
+          </button>
+
+          {/* Templates Button */}
+          <button
+            onClick={() => setShowTemplates(true)}
+            className="p-2 rounded-lg bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border hover:bg-light-hover dark:hover:bg-dark-hover transition-colors"
+            title="Load Template"
+            aria-label="Load model from template"
+          >
+            <Sparkles className="w-4 h-4 text-gray-600 dark:text-gray-400" aria-hidden="true" />
+          </button>
+
           {/* History Button */}
           <button
             onClick={() => setShowHistoryPanel(true)}
@@ -317,6 +399,16 @@ export default function WorkspacePage() {
             aria-label="View change history"
           >
             <History className="w-4 h-4 text-gray-600 dark:text-gray-400" aria-hidden="true" />
+          </button>
+
+          {/* Keyboard Shortcuts Button */}
+          <button
+            onClick={() => setShowShortcutsHelp(true)}
+            className="p-2 rounded-lg bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border hover:bg-light-hover dark:hover:bg-dark-hover transition-colors"
+            title="Keyboard Shortcuts (?)"
+            aria-label="Show keyboard shortcuts"
+          >
+            <Keyboard className="w-4 h-4 text-gray-600 dark:text-gray-400" aria-hidden="true" />
           </button>
 
           {/* Theme Toggle */}
@@ -479,6 +571,31 @@ export default function WorkspacePage() {
       <ChangeHistoryPanel
         isOpen={showHistoryPanel}
         onClose={() => setShowHistoryPanel(false)}
+      />
+
+      {/* Search Panel */}
+      <SearchPanel
+        isOpen={showSearchPanel}
+        onClose={() => setShowSearchPanel(false)}
+      />
+
+      {/* Keyboard Shortcuts Help */}
+      <KeyboardShortcutsHelp
+        isOpen={showShortcutsHelp}
+        onClose={() => setShowShortcutsHelp(false)}
+      />
+
+      {/* Model Validation */}
+      <ModelValidation
+        isOpen={showValidation}
+        onClose={() => setShowValidation(false)}
+      />
+
+      {/* Template Selector */}
+      <TemplateSelector
+        isOpen={showTemplates}
+        onClose={() => setShowTemplates(false)}
+        onSelect={handleTemplateSelect}
       />
     </div>
   );
