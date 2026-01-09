@@ -5,9 +5,11 @@ import { useModel } from '@/context/ModelContext';
 import { ChatMessage as ChatMessageType } from '@/types/chat';
 import { parseModifyResponse } from '@/lib/prompts/modifyModel';
 import { generateId, Entity, Attribute, Relationship, calculateEntityHeight, DEFAULT_ENTITY_WIDTH, ModelChange } from '@/types/model';
+import { ModificationProposal, createModificationProposal } from '@/types/proposal';
 import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
 import SuggestionChips from './SuggestionChips';
+import { ActionPreviewCard, ConfirmationModal, ImpactDetailsModal } from '@/components/proposal';
 import { MessageSquare, X, Trash2 } from 'lucide-react';
 
 export default function ChatPanel() {
@@ -16,14 +18,20 @@ export default function ChatPanel() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Proposal state - NO auto-apply, user must confirm
+  const [pendingProposal, setPendingProposal] = useState<ModificationProposal | null>(null);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [showImpactDetails, setShowImpactDetails] = useState(false);
+  const [isApplying, setIsApplying] = useState(false);
+
   const { model, updateEntity, addEntity, deleteEntity, addRelationship, deleteRelationship, updateRelationship } = useModel();
 
   // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, pendingProposal]);
 
-  // Apply model changes from AI response
+  // Apply model changes from AI response - ONLY called after user confirmation
   const applyChanges = useCallback((changes: any[]) => {
     const appliedChanges: ModelChange[] = [];
 
@@ -233,25 +241,56 @@ export default function ChatPanel() {
         }
       }
 
-      // Parse the response and apply changes
+      // Parse the response
       const parsed = parseModifyResponse(fullContent);
-      let appliedChanges: ModelChange[] = [];
 
-      if (parsed && parsed.changes && parsed.changes.length > 0) {
-        appliedChanges = applyChanges(parsed.changes);
+      if (parsed && parsed.rawChanges && parsed.rawChanges.length > 0) {
+        // Create a proposal instead of auto-applying changes
+        const proposal = createModificationProposal(content, {
+          type: 'modification',
+          explanation: parsed.explanation,
+          changes: parsed.changes,
+          impactSummary: parsed.impactSummary,
+          warnings: parsed.warnings,
+          suggestions: parsed.suggestions,
+          rawChanges: parsed.rawChanges,
+        });
+
+        setPendingProposal(proposal);
+
+        // Update the message to show that a proposal is pending
+        setMessages(prev => prev.map(m =>
+          m.id === assistantMessageId
+            ? {
+                ...m,
+                content: 'I have prepared changes for your review. Please confirm to apply them.',
+                isStreaming: false,
+              }
+            : m
+        ));
+      } else if (parsed && parsed.explanation) {
+        // No changes needed, just show the explanation
+        setMessages(prev => prev.map(m =>
+          m.id === assistantMessageId
+            ? {
+                ...m,
+                content: parsed.explanation,
+                isStreaming: false,
+              }
+            : m
+        ));
+      } else {
+        // Fallback - show the raw content
+        setMessages(prev => prev.map(m =>
+          m.id === assistantMessageId
+            ? {
+                ...m,
+                content: fullContent,
+                isStreaming: false,
+              }
+            : m
+        ));
       }
-
-      // Update the message with final content and changes
-      setMessages(prev => prev.map(m =>
-        m.id === assistantMessageId
-          ? {
-              ...m,
-              content: parsed?.explanation || fullContent,
-              isStreaming: false,
-              modelChanges: appliedChanges.length > 0 ? appliedChanges : undefined,
-            }
-          : m
-      ));
 
     } catch (error: any) {
       setMessages(prev => prev.map(m =>
@@ -267,10 +306,72 @@ export default function ChatPanel() {
     } finally {
       setIsProcessing(false);
     }
-  }, [model, applyChanges]);
+  }, [model]);
+
+  // Handle user clicking "Proceed" on the proposal
+  const handleProceed = () => {
+    setShowConfirmation(true);
+  };
+
+  // Handle user confirming the changes
+  const handleConfirm = () => {
+    if (!pendingProposal) return;
+
+    setIsApplying(true);
+
+    try {
+      // Apply the changes
+      const appliedChanges = applyChanges(pendingProposal.rawChanges);
+
+      // Add a success message
+      const successMessage: ChatMessageType = {
+        id: generateId(),
+        role: 'assistant',
+        content: `Changes applied successfully! ${appliedChanges.length} ${appliedChanges.length === 1 ? 'change' : 'changes'} made to your model.`,
+        timestamp: new Date().toISOString(),
+        modelChanges: appliedChanges,
+      };
+      setMessages(prev => [...prev, successMessage]);
+
+      // Clear the proposal
+      setPendingProposal(null);
+      setShowConfirmation(false);
+    } catch (error: any) {
+      // Show error message
+      const errorMessage: ChatMessageType = {
+        id: generateId(),
+        role: 'assistant',
+        content: `Failed to apply changes: ${error.message}`,
+        timestamp: new Date().toISOString(),
+        error: error.message,
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsApplying(false);
+    }
+  };
+
+  // Handle user cancelling the proposal
+  const handleCancel = () => {
+    if (pendingProposal) {
+      // Add a cancellation message
+      const cancelMessage: ChatMessageType = {
+        id: generateId(),
+        role: 'assistant',
+        content: 'Changes cancelled. No modifications were made to your model.',
+        timestamp: new Date().toISOString(),
+      };
+      setMessages(prev => [...prev, cancelMessage]);
+    }
+
+    setPendingProposal(null);
+    setShowConfirmation(false);
+    setShowImpactDetails(false);
+  };
 
   const handleClearChat = () => {
     setMessages([]);
+    setPendingProposal(null);
   };
 
   if (isCollapsed) {
@@ -285,61 +386,104 @@ export default function ChatPanel() {
   }
 
   return (
-    <div className="w-80 bg-white dark:bg-dark-bg border-l border-light-border dark:border-dark-border flex flex-col h-full">
-      {/* Header */}
-      <div className="panel-header">
-        <div className="flex items-center gap-2">
-          <MessageSquare className="w-5 h-5 text-accent-primary" />
-          <span className="font-medium">AI Chat</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={handleClearChat}
-            className="p-1.5 hover:bg-light-hover dark:hover:bg-dark-hover rounded transition-colors"
-            title="Clear chat"
-          >
-            <Trash2 className="w-4 h-4 text-gray-500" />
-          </button>
-          <button
-            onClick={() => setIsCollapsed(true)}
-            className="p-1.5 hover:bg-light-hover dark:hover:bg-dark-hover rounded transition-colors"
-          >
-            <X className="w-4 h-4 text-gray-500" />
-          </button>
-        </div>
-      </div>
-
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.length === 0 ? (
-          <div className="text-center text-gray-500 py-8">
-            <MessageSquare className="w-12 h-12 mx-auto mb-4 opacity-50" />
-            <p className="text-sm">Ask me to modify your data model.</p>
-            <p className="text-xs mt-2">
-              Try: "Add a status field to users"
-            </p>
+    <>
+      <div className="w-80 bg-white dark:bg-dark-bg border-l border-light-border dark:border-dark-border flex flex-col h-full">
+        {/* Header */}
+        <div className="panel-header">
+          <div className="flex items-center gap-2">
+            <MessageSquare className="w-5 h-5 text-accent-primary" />
+            <span className="font-medium">AI Chat</span>
           </div>
-        ) : (
-          messages.map((message) => (
-            <ChatMessage key={message.id} message={message} />
-          ))
-        )}
-        <div ref={messagesEndRef} />
+          <div className="flex items-center gap-1">
+            <button
+              onClick={handleClearChat}
+              className="p-1.5 hover:bg-light-hover dark:hover:bg-dark-hover rounded transition-colors"
+              title="Clear chat"
+            >
+              <Trash2 className="w-4 h-4 text-gray-500" />
+            </button>
+            <button
+              onClick={() => setIsCollapsed(true)}
+              className="p-1.5 hover:bg-light-hover dark:hover:bg-dark-hover rounded transition-colors"
+            >
+              <X className="w-4 h-4 text-gray-500" />
+            </button>
+          </div>
+        </div>
+
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {messages.length === 0 && !pendingProposal ? (
+            <div className="text-center text-gray-500 py-8">
+              <MessageSquare className="w-12 h-12 mx-auto mb-4 opacity-50" />
+              <p className="text-sm">Ask me to modify your data model.</p>
+              <p className="text-xs mt-2">
+                Try: "Add a status field to users"
+              </p>
+            </div>
+          ) : (
+            messages.map((message) => (
+              <ChatMessage key={message.id} message={message} />
+            ))
+          )}
+
+          {/* Pending Proposal Card */}
+          {pendingProposal && (
+            <ActionPreviewCard
+              proposal={pendingProposal}
+              onProceed={handleProceed}
+              onCancel={handleCancel}
+              onShowImpact={() => setShowImpactDetails(true)}
+            />
+          )}
+
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Suggestions */}
+        <div className="px-4 py-2 border-t border-light-border dark:border-dark-border">
+          <SuggestionChips onSelect={handleSend} disabled={isProcessing || !!pendingProposal} />
+        </div>
+
+        {/* Input */}
+        <div className="p-4 border-t border-light-border dark:border-dark-border">
+          <ChatInput
+            onSend={handleSend}
+            disabled={isProcessing || !model || !!pendingProposal}
+            placeholder={
+              pendingProposal
+                ? "Confirm or cancel pending changes first"
+                : model
+                ? "Describe changes..."
+                : "Generate a model first"
+            }
+          />
+        </div>
       </div>
 
-      {/* Suggestions */}
-      <div className="px-4 py-2 border-t border-light-border dark:border-dark-border">
-        <SuggestionChips onSelect={handleSend} disabled={isProcessing} />
-      </div>
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showConfirmation}
+        onConfirm={handleConfirm}
+        onCancel={() => setShowConfirmation(false)}
+        title="Confirm Model Changes"
+        description="Apply the following changes to your data model?"
+        changes={pendingProposal?.changes}
+        entityCount={pendingProposal?.impactSummary.entitiesAffected}
+        attributeCount={pendingProposal?.impactSummary.attributesAffected}
+        relationshipCount={pendingProposal?.impactSummary.relationshipsAffected}
+        warnings={pendingProposal?.impactSummary.breakingChanges}
+        isLoading={isApplying}
+      />
 
-      {/* Input */}
-      <div className="p-4 border-t border-light-border dark:border-dark-border">
-        <ChatInput
-          onSend={handleSend}
-          disabled={isProcessing || !model}
-          placeholder={model ? "Describe changes..." : "Generate a model first"}
+      {/* Impact Details Modal */}
+      {pendingProposal && (
+        <ImpactDetailsModal
+          isOpen={showImpactDetails}
+          onClose={() => setShowImpactDetails(false)}
+          proposal={pendingProposal}
         />
-      </div>
-    </div>
+      )}
+    </>
   );
 }

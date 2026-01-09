@@ -1,10 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useModel } from '@/context/ModelContext';
 import { useTheme } from '@/context/ThemeContext';
 import { EXAMPLE_PROMPTS } from '@/types/chat';
+import { GenerationProposal, createGenerationProposal, ModelVariant } from '@/types/proposal';
+import { ConceptualOptionsPanel } from '@/components/proposal';
 import {
   Database,
   Sparkles,
@@ -35,12 +37,12 @@ import {
 } from 'lucide-react';
 
 const iconMap: Record<string, React.ReactNode> = {
-  'shopping-cart': <ShoppingCart className="w-5 h-5" />,
-  'users': <Users className="w-5 h-5" />,
-  'folder': <Folder className="w-5 h-5" />,
-  'heart': <Heart className="w-5 h-5" />,
-  'book': <BookOpen className="w-5 h-5" />,
-  'package': <Package className="w-5 h-5" />,
+  'shopping-cart': <ShoppingCart className="w-5 h-5" aria-hidden="true" />,
+  'users': <Users className="w-5 h-5" aria-hidden="true" />,
+  'folder': <Folder className="w-5 h-5" aria-hidden="true" />,
+  'heart': <Heart className="w-5 h-5" aria-hidden="true" />,
+  'book': <BookOpen className="w-5 h-5" aria-hidden="true" />,
+  'package': <Package className="w-5 h-5" aria-hidden="true" />,
 };
 
 const features = [
@@ -84,10 +86,15 @@ export default function LandingPage() {
   const [prompt, setPrompt] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [isConfirming, setIsConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const { setModel, setIsGenerating, model } = useModel();
   const { theme, toggleTheme } = useTheme();
+
+  // Proposal state for variant selection
+  const [generationProposal, setGenerationProposal] = useState<GenerationProposal | null>(null);
+  const [showProposalPanel, setShowProposalPanel] = useState(false);
 
   const handleGenerate = async () => {
     if (!prompt.trim()) return;
@@ -106,17 +113,107 @@ export default function LandingPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to generate model');
+        throw new Error(data.error || 'Failed to generate model variants');
       }
 
-      setModel(data.model);
-      router.push('/workspace');
+      // Create proposal from variants
+      if (data.proposal?.variants && data.proposal.variants.length > 0) {
+        const proposal = createGenerationProposal(prompt.trim(), data.proposal.variants);
+        setGenerationProposal(proposal);
+        setShowProposalPanel(true);
+      } else {
+        throw new Error('No model variants were generated');
+      }
     } catch (err: any) {
       setError(err.message || 'Something went wrong');
     } finally {
       setIsLoading(false);
       setIsGenerating(false);
     }
+  };
+
+  // Handle variant selection
+  const handleVariantSelect = useCallback((variantId: string) => {
+    if (!generationProposal) return;
+
+    const variant = generationProposal.variants.find(v => v.id === variantId);
+    if (!variant) return;
+
+    setGenerationProposal({
+      ...generationProposal,
+      selectedVariantId: variantId,
+      selectedEntityIds: variant.entities.map(e => e.id),
+    });
+  }, [generationProposal]);
+
+  // Handle entity toggle
+  const handleEntityToggle = useCallback((entityId: string) => {
+    if (!generationProposal) return;
+
+    const isSelected = generationProposal.selectedEntityIds.includes(entityId);
+    setGenerationProposal({
+      ...generationProposal,
+      selectedEntityIds: isSelected
+        ? generationProposal.selectedEntityIds.filter(id => id !== entityId)
+        : [...generationProposal.selectedEntityIds, entityId],
+    });
+  }, [generationProposal]);
+
+  // Handle confirm generation
+  const handleConfirmGeneration = async () => {
+    if (!generationProposal || !generationProposal.selectedVariantId) return;
+
+    const selectedVariant = generationProposal.variants.find(
+      v => v.id === generationProposal.selectedVariantId
+    );
+    if (!selectedVariant) return;
+
+    // Get selected entity names
+    const selectedEntityNames = selectedVariant.entities
+      .filter(e => generationProposal.selectedEntityIds.includes(e.id))
+      .map(e => e.name);
+
+    if (selectedEntityNames.length === 0) {
+      setError('Please select at least one entity');
+      return;
+    }
+
+    setIsConfirming(true);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/generate/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          originalPrompt: generationProposal.originalPrompt,
+          selectedVariantId: selectedVariant.name,
+          selectedEntityIds: selectedEntityNames,
+          targetDatabase: 'postgresql',
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to generate model');
+      }
+
+      setModel(data.model);
+      setShowProposalPanel(false);
+      setGenerationProposal(null);
+      router.push('/workspace');
+    } catch (err: any) {
+      setError(err.message || 'Failed to generate model');
+    } finally {
+      setIsConfirming(false);
+    }
+  };
+
+  // Handle cancel
+  const handleCancelProposal = () => {
+    setShowProposalPanel(false);
+    setGenerationProposal(null);
   };
 
   const handleExampleClick = (examplePrompt: string) => {
@@ -183,7 +280,7 @@ export default function LandingPage() {
             {/* Logo */}
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-primary to-purple-600 flex items-center justify-center shadow-lg shadow-accent-primary/25">
-                <Database className="w-5 h-5 text-white" />
+                <Database className="w-5 h-5 text-white" aria-hidden="true" />
               </div>
               <div>
                 <h1 className="text-lg font-semibold text-gray-900 dark:text-white">AI Data Modeler</h1>
@@ -197,12 +294,12 @@ export default function LandingPage() {
               <button
                 onClick={toggleTheme}
                 className="p-2.5 rounded-xl bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border hover:bg-light-hover dark:hover:bg-dark-hover transition-all"
-                aria-label="Toggle theme"
+                aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
               >
                 {theme === 'dark' ? (
-                  <Sun className="w-5 h-5 text-amber-500" />
+                  <Sun className="w-5 h-5 text-amber-500" aria-hidden="true" />
                 ) : (
-                  <Moon className="w-5 h-5 text-slate-600" />
+                  <Moon className="w-5 h-5 text-slate-600" aria-hidden="true" />
                 )}
               </button>
 
@@ -212,9 +309,9 @@ export default function LandingPage() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="p-2.5 rounded-xl bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border hover:bg-light-hover dark:hover:bg-dark-hover transition-all"
-                aria-label="GitHub"
+                aria-label="View project on GitHub"
               >
-                <Github className="w-5 h-5" />
+                <Github className="w-5 h-5" aria-hidden="true" />
               </a>
 
               {/* Continue button */}
@@ -222,9 +319,10 @@ export default function LandingPage() {
                 <button
                   onClick={() => router.push('/workspace')}
                   className="flex items-center gap-2 px-4 py-2.5 bg-accent-primary hover:bg-accent-primary-dark text-white rounded-xl font-medium transition-all shadow-lg shadow-accent-primary/25"
+                  aria-label="Continue to workspace"
                 >
                   Continue
-                  <ArrowRight className="w-4 h-4" />
+                  <ArrowRight className="w-4 h-4" aria-hidden="true" />
                 </button>
               )}
             </div>
@@ -239,7 +337,7 @@ export default function LandingPage() {
           <div className="text-center space-y-6 animate-fade-in">
             {/* Badge */}
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent-primary/10 dark:bg-accent-primary/20 border border-accent-primary/20 text-accent-primary text-sm font-medium">
-              <Sparkles className="w-4 h-4" />
+              <Sparkles className="w-4 h-4" aria-hidden="true" />
               Powered by Llama 3.3 70B
             </div>
 
@@ -305,15 +403,16 @@ export default function LandingPage() {
               onClick={handleGenerate}
               disabled={!prompt.trim() || isLoading || isImporting}
               className="w-full py-4 bg-gradient-to-r from-accent-primary to-purple-600 hover:from-accent-primary-dark hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed rounded-xl font-semibold text-lg text-white flex items-center justify-center gap-3 transition-all shadow-xl shadow-accent-primary/25 hover:shadow-2xl hover:shadow-accent-primary/30 disabled:shadow-none"
+              aria-busy={isLoading}
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Generating your data model...
+                  <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
+                  Generating model options...
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-5 h-5" />
+                  <Sparkles className="w-5 h-5" aria-hidden="true" />
                   Generate ERD
                 </>
               )}
@@ -327,18 +426,18 @@ export default function LandingPage() {
                 </p>
               </div>
 
-              <label className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-light-border dark:border-dark-border rounded-2xl cursor-pointer hover:border-accent-primary/50 transition-all ${isImporting ? 'opacity-60 cursor-not-allowed' : ''}`}>
+              <label className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-light-border dark:border-dark-border rounded-2xl cursor-pointer hover:border-accent-primary/50 transition-all ${isImporting ? 'opacity-60 cursor-not-allowed' : ''}`} aria-label="Upload SQL file to reverse engineer">
                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
                   {isImporting ? (
                     <>
-                      <Loader2 className="w-8 h-8 mb-2 text-accent-primary animate-spin" />
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                      <Loader2 className="w-8 h-8 mb-2 text-accent-primary animate-spin" aria-hidden="true" />
+                      <p className="text-sm text-gray-500 dark:text-gray-400" role="status">
                         Analyzing SQL and generating ERD...
                       </p>
                     </>
                   ) : (
                     <>
-                      <FileCode className="w-8 h-8 mb-2 text-gray-400 dark:text-gray-500" />
+                      <FileCode className="w-8 h-8 mb-2 text-gray-400 dark:text-gray-500" aria-hidden="true" />
                       <p className="mb-1 text-sm text-gray-500 dark:text-gray-400">
                         <span className="font-semibold text-accent-primary">Upload SQL file</span> to reverse engineer
                       </p>
@@ -354,6 +453,7 @@ export default function LandingPage() {
                   className="hidden"
                   onChange={handleSqlFileUpload}
                   disabled={isImporting || isLoading}
+                  aria-label="Select SQL file to import"
                 />
               </label>
             </div>
@@ -373,8 +473,8 @@ export default function LandingPage() {
                 className="group p-5 bg-white dark:bg-dark-card border border-light-border dark:border-dark-border rounded-2xl hover:border-accent-primary/50 hover:shadow-lg hover:shadow-accent-primary/5 transition-all text-left hover-lift"
               >
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-xl bg-accent-primary/10 flex items-center justify-center text-accent-primary group-hover:bg-accent-primary group-hover:text-white transition-colors">
-                    {iconMap[example.icon] || <Database className="w-5 h-5" />}
+                  <div className="w-10 h-10 rounded-xl bg-accent-primary/10 flex items-center justify-center text-accent-primary group-hover:bg-accent-primary group-hover:text-white transition-colors" aria-hidden="true">
+                    {iconMap[example.icon] || <Database className="w-5 h-5" aria-hidden="true" />}
                   </div>
                   <span className="font-semibold text-gray-900 dark:text-white">{example.title}</span>
                 </div>
@@ -401,8 +501,8 @@ export default function LandingPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {features.map((feature, index) => (
                 <div key={index} className="feature-card hover-lift">
-                  <div className={`w-12 h-12 rounded-xl ${feature.bgColor} flex items-center justify-center mb-4`}>
-                    <feature.icon className={`w-6 h-6 ${feature.color}`} />
+                  <div className={`w-12 h-12 rounded-xl ${feature.bgColor} flex items-center justify-center mb-4`} aria-hidden="true">
+                    <feature.icon className={`w-6 h-6 ${feature.color}`} aria-hidden="true" />
                   </div>
                   <h4 className="font-semibold text-gray-900 dark:text-white mb-2">{feature.title}</h4>
                   <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">{feature.description}</p>
@@ -433,8 +533,8 @@ export default function LandingPage() {
               },
               {
                 step: '2',
-                title: 'Generate',
-                description: 'Our AI creates a complete ERD with entities, attributes, and relationships.',
+                title: 'Choose',
+                description: 'Select from AI-generated model variants. Pick the scope that fits your needs.',
                 icon: Sparkles,
               },
               {
@@ -446,18 +546,18 @@ export default function LandingPage() {
             ].map((item, index) => (
               <div key={index} className="relative">
                 <div className="flex flex-col items-center text-center">
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-accent-primary to-purple-600 flex items-center justify-center mb-4 shadow-lg shadow-accent-primary/25">
-                    <item.icon className="w-7 h-7 text-white" />
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-accent-primary to-purple-600 flex items-center justify-center mb-4 shadow-lg shadow-accent-primary/25" aria-hidden="true">
+                    <item.icon className="w-7 h-7 text-white" aria-hidden="true" />
                   </div>
-                  <div className="absolute -top-2 -left-2 w-8 h-8 rounded-full bg-accent-primary text-white text-sm font-bold flex items-center justify-center">
+                  <div className="absolute -top-2 -left-2 w-8 h-8 rounded-full bg-accent-primary text-white text-sm font-bold flex items-center justify-center" aria-hidden="true">
                     {item.step}
                   </div>
                   <h4 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">{item.title}</h4>
                   <p className="text-gray-500 dark:text-gray-400">{item.description}</p>
                 </div>
                 {index < 2 && (
-                  <div className="hidden md:block absolute top-8 left-full w-full">
-                    <ChevronRight className="w-6 h-6 text-gray-300 dark:text-gray-600 mx-auto" />
+                  <div className="hidden md:block absolute top-8 left-full w-full" aria-hidden="true">
+                    <ChevronRight className="w-6 h-6 text-gray-300 dark:text-gray-600 mx-auto" aria-hidden="true" />
                   </div>
                 )}
               </div>
@@ -479,8 +579,9 @@ export default function LandingPage() {
               <button
                 onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                 className="inline-flex items-center gap-2 px-8 py-4 bg-white text-accent-primary font-semibold rounded-xl hover:bg-gray-100 transition-colors shadow-xl"
+                aria-label="Get started free - scroll to top"
               >
-                <Play className="w-5 h-5" />
+                <Play className="w-5 h-5" aria-hidden="true" />
                 Get Started Free
               </button>
             </div>
@@ -493,8 +594,8 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto px-6 py-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent-primary to-purple-600 flex items-center justify-center">
-                <Database className="w-4 h-4 text-white" />
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent-primary to-purple-600 flex items-center justify-center" aria-hidden="true">
+                <Database className="w-4 h-4 text-white" aria-hidden="true" />
               </div>
               <span className="text-sm text-gray-500 dark:text-gray-400">
                 AI Data Modeler - Powered by Groq & Llama 3.3 70B
@@ -529,6 +630,26 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
+
+      {/* Variant Selection Modal */}
+      {showProposalPanel && generationProposal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={handleCancelProposal}
+          />
+          <div className="relative z-10">
+            <ConceptualOptionsPanel
+              proposal={generationProposal}
+              onVariantSelect={handleVariantSelect}
+              onEntityToggle={handleEntityToggle}
+              onConfirm={handleConfirmGeneration}
+              onCancel={handleCancelProposal}
+              isLoading={isConfirming}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

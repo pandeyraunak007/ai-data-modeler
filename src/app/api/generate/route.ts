@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { callGroqDirect, GENERATION_PARAMS } from '@/lib/groq';
-import { createGeneratePrompt } from '@/lib/prompts/generateERD';
-import { smartLayout } from '@/lib/autoLayout';
-import { DataModel, Entity, Relationship, generateId, DEFAULT_ENTITY_WIDTH, calculateEntityHeight } from '@/types/model';
+import { createGenerateVariantsPrompt } from '@/lib/prompts/generateERD';
+import { ModelVariant, EntityPreview, RelationshipPreview } from '@/types/proposal';
+import { generateId } from '@/types/model';
 
 // Force Node.js runtime for Groq SDK compatibility
 export const runtime = 'nodejs';
@@ -10,7 +10,7 @@ export const maxDuration = 30;
 
 export async function POST(request: NextRequest) {
   try {
-    const { prompt, targetDatabase = 'postgresql' } = await request.json();
+    const { prompt } = await request.json();
 
     if (!prompt || typeof prompt !== 'string') {
       return NextResponse.json(
@@ -19,8 +19,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate ERD using AI (using direct fetch for better serverless compatibility)
-    const { messages } = createGeneratePrompt(prompt);
+    // Generate model variants using AI
+    const { messages } = createGenerateVariantsPrompt(prompt);
 
     const completion = await callGroqDirect(messages, GENERATION_PARAMS);
 
@@ -45,60 +45,52 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate and transform response into DataModel
-    const entities: Entity[] = (parsedResponse.entities || []).map((e: any) => ({
-      id: e.id || generateId(),
-      name: e.name || 'Untitled',
-      physicalName: e.name?.toLowerCase().replace(/\s+/g, '_'),
-      description: e.description || '',
-      category: e.category || 'standard',
-      x: 0,
-      y: 0,
-      width: DEFAULT_ENTITY_WIDTH,
-      height: calculateEntityHeight((e.attributes || []).length),
-      attributes: (e.attributes || []).map((a: any) => ({
-        id: a.id || generateId(),
-        name: a.name || 'column',
-        type: a.type || 'VARCHAR(255)',
-        isPrimaryKey: a.isPrimaryKey || false,
-        isForeignKey: a.isForeignKey || false,
-        isRequired: a.isRequired ?? true,
-        isUnique: a.isUnique || false,
-        isIndexed: a.isIndexed || false,
-        defaultValue: a.defaultValue,
-        description: a.description || '',
-      })),
-    }));
+    // Validate and transform variants
+    const variants: ModelVariant[] = (parsedResponse.variants || []).map((v: any, index: number) => {
+      const entities: EntityPreview[] = (v.entities || []).map((e: any) => ({
+        id: e.id || generateId(),
+        name: e.name || 'Untitled',
+        description: e.description || '',
+        category: e.category || 'standard',
+        estimatedAttributeCount: e.estimatedAttributeCount || 5,
+        isSelected: true, // All entities selected by default
+      }));
 
-    const relationships: Relationship[] = (parsedResponse.relationships || []).map((r: any) => ({
-      id: r.id || generateId(),
-      name: r.name || '',
-      type: r.type || 'non-identifying',
-      sourceEntityId: r.sourceEntityId,
-      targetEntityId: r.targetEntityId,
-      sourceCardinality: r.sourceCardinality || '1',
-      targetCardinality: r.targetCardinality || 'M',
-    }));
+      const relationships: RelationshipPreview[] = (v.relationships || []).map((r: any) => ({
+        id: r.id || generateId(),
+        sourceEntityId: r.sourceEntityId,
+        targetEntityId: r.targetEntityId,
+        type: r.type || 'non-identifying',
+        sourceCardinality: r.sourceCardinality || '1',
+        targetCardinality: r.targetCardinality || 'M',
+        description: r.description || '',
+      }));
 
-    // Apply auto-layout to position entities
-    const layoutedEntities = smartLayout(entities, relationships);
+      return {
+        id: v.id || `variant_${index + 1}`,
+        name: v.name || `Option ${index + 1}`,
+        description: v.description || '',
+        complexity: v.complexity || 'standard',
+        entities,
+        relationships,
+        estimatedTables: entities.length,
+        useCases: v.useCases || [],
+      };
+    });
 
-    // Create the complete data model
-    const model: DataModel = {
-      id: generateId(),
-      name: parsedResponse.modelName || 'Generated Model',
-      description: parsedResponse.description || prompt,
-      entities: layoutedEntities,
-      relationships,
-      targetDatabase,
-      notation: 'crowsfoot',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+    // Ensure we have at least one variant
+    if (variants.length === 0) {
+      return NextResponse.json(
+        { error: 'AI did not generate any model variants' },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
-      model,
+      proposal: {
+        variants,
+      },
     });
 
   } catch (error: any) {
@@ -123,7 +115,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { error: error.message || 'Failed to generate model' },
+      { error: error.message || 'Failed to generate model variants' },
       { status: 500 }
     );
   }
