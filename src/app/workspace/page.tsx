@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { exportAsPng, exportAsSvg, copyAsPng } from '@/lib/imageExport';
 import { ChangeHistoryPanel } from '@/components/history';
+import ResizablePanel from '@/components/ui/ResizablePanel';
 
 export default function WorkspacePage() {
   const router = useRouter();
@@ -442,11 +443,29 @@ export default function WorkspacePage() {
         {/* Canvas */}
         <DiagramCanvas />
 
-        {/* Properties Panel */}
-        <PropertiesPanel />
+        {/* Properties Panel - Resizable */}
+        <ResizablePanel
+          side="right"
+          defaultWidth={320}
+          minWidth={240}
+          maxWidth={500}
+          storageKey="ai-dm-properties-width"
+          className="border-l border-light-border dark:border-dark-border"
+        >
+          <PropertiesPanel />
+        </ResizablePanel>
 
-        {/* Chat Panel */}
-        <ChatPanel />
+        {/* Chat Panel - Resizable */}
+        <ResizablePanel
+          side="right"
+          defaultWidth={320}
+          minWidth={280}
+          maxWidth={500}
+          storageKey="ai-dm-chat-width"
+          className="border-l border-light-border dark:border-dark-border"
+        >
+          <ChatPanel />
+        </ResizablePanel>
       </div>
 
       {/* DDL Export Modal */}

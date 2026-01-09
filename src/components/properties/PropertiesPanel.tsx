@@ -35,7 +35,7 @@ export default function PropertiesPanel() {
   }
 
   return (
-    <div className="w-72 bg-white dark:bg-dark-bg border-l border-light-border dark:border-dark-border flex flex-col h-full">
+    <div className="w-full bg-white dark:bg-dark-bg flex flex-col h-full">
       {/* Header */}
       <div className="panel-header">
         <div className="flex items-center gap-2">
