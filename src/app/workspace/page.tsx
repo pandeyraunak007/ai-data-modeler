@@ -24,8 +24,10 @@ import {
   Image,
   FileImage,
   Copy,
+  History,
 } from 'lucide-react';
 import { exportAsPng, exportAsSvg, copyAsPng } from '@/lib/imageExport';
+import { ChangeHistoryPanel } from '@/components/history';
 
 export default function WorkspacePage() {
   const router = useRouter();
@@ -35,6 +37,7 @@ export default function WorkspacePage() {
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [isImportingSql, setIsImportingSql] = useState(false);
   const [isExportingImage, setIsExportingImage] = useState(false);
+  const [showHistoryPanel, setShowHistoryPanel] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const sqlFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -305,6 +308,16 @@ export default function WorkspacePage() {
 
           <div className="w-px h-6 bg-light-border dark:bg-dark-border mx-1" />
 
+          {/* History Button */}
+          <button
+            onClick={() => setShowHistoryPanel(true)}
+            className="p-2 rounded-lg bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border hover:bg-light-hover dark:hover:bg-dark-hover transition-colors"
+            title="Change History (Ctrl+H)"
+            aria-label="View change history"
+          >
+            <History className="w-4 h-4 text-gray-600 dark:text-gray-400" aria-hidden="true" />
+          </button>
+
           {/* Theme Toggle */}
           <button
             onClick={toggleTheme}
@@ -441,6 +454,12 @@ export default function WorkspacePage() {
         isOpen={showDDLModal}
         onClose={() => setShowDDLModal(false)}
         model={model}
+      />
+
+      {/* Change History Panel */}
+      <ChangeHistoryPanel
+        isOpen={showHistoryPanel}
+        onClose={() => setShowHistoryPanel(false)}
       />
     </div>
   );

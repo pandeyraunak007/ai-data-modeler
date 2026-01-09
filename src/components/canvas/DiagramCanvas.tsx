@@ -31,6 +31,10 @@ export default function DiagramCanvas() {
     updateRelationship,
     deleteRelationship,
     addRelationship,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
   } = useModel();
 
   // Edit modal state
@@ -299,6 +303,27 @@ export default function DiagramCanvas() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
 
+      // Handle Ctrl/Cmd shortcuts
+      if (e.ctrlKey || e.metaKey) {
+        switch (e.key.toLowerCase()) {
+          case 'z':
+            e.preventDefault();
+            if (e.shiftKey) {
+              // Ctrl+Shift+Z = Redo
+              if (canRedo) redo();
+            } else {
+              // Ctrl+Z = Undo
+              if (canUndo) undo();
+            }
+            return;
+          case 'y':
+            e.preventDefault();
+            // Ctrl+Y = Redo
+            if (canRedo) redo();
+            return;
+        }
+      }
+
       switch (e.key) {
         case 'v':
         case 'V':
@@ -356,7 +381,7 @@ export default function DiagramCanvas() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleZoomIn, handleZoomOut, handleZoomReset, selectedEntityId, selectedRelationshipId, deleteEntity, deleteRelationship, selectEntity, selectRelationship, model, handleAutoLayout]);
+  }, [handleZoomIn, handleZoomOut, handleZoomReset, selectedEntityId, selectedRelationshipId, deleteEntity, deleteRelationship, selectEntity, selectRelationship, model, handleAutoLayout, undo, redo, canUndo, canRedo]);
 
   // Entity edit handlers
   const handleEntityEdit = useCallback((entity: Entity) => {
@@ -516,6 +541,10 @@ export default function DiagramCanvas() {
         onAddEntity={handleAddEntity}
         onDelete={handleDeleteSelected}
         hasSelection={!!(selectedEntityId || selectedRelationshipId)}
+        onUndo={undo}
+        onRedo={redo}
+        canUndo={canUndo}
+        canRedo={canRedo}
       />
 
       {/* Model info */}

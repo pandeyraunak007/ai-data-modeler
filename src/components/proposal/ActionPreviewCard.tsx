@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ModificationProposal, getChangeIcon, getChangeColor } from '@/types/proposal';
-import { Bot, X, Eye, Check, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
+import { Bot, X, Eye, Check, AlertTriangle, ChevronDown, ChevronUp, Download } from 'lucide-react';
 
 interface ActionPreviewCardProps {
   proposal: ModificationProposal;
@@ -22,6 +22,67 @@ export default function ActionPreviewCard({
   const hasMoreChanges = proposal.changes.length > 5;
 
   const { entitiesAffected, attributesAffected, relationshipsAffected } = proposal.impactSummary;
+
+  // Export proposal as JSON
+  const handleExportProposal = useCallback(() => {
+    const exportData = {
+      type: 'modification_proposal',
+      exportedAt: new Date().toISOString(),
+      originalMessage: proposal.originalMessage,
+      explanation: proposal.explanation,
+      changes: proposal.changes,
+      impactSummary: proposal.impactSummary,
+      warnings: proposal.warnings,
+      suggestions: proposal.suggestions,
+      rawChanges: proposal.rawChanges,
+    };
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `proposal-${proposal.id}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, [proposal]);
+
+  // Keyboard shortcuts for proposals
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if user is typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+      switch (e.key) {
+        case 'Enter':
+          e.preventDefault();
+          onProceed();
+          break;
+        case 'Escape':
+          e.preventDefault();
+          onCancel();
+          break;
+        case 'i':
+        case 'I':
+          if (!e.ctrlKey && !e.metaKey) {
+            e.preventDefault();
+            onShowImpact();
+          }
+          break;
+        case 'e':
+        case 'E':
+          if (!e.ctrlKey && !e.metaKey) {
+            e.preventDefault();
+            handleExportProposal();
+          }
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onProceed, onCancel, onShowImpact, handleExportProposal]);
 
   return (
     <div className="bg-white dark:bg-dark-card border-2 border-accent-primary/30 rounded-xl overflow-hidden shadow-lg">
@@ -143,28 +204,44 @@ export default function ActionPreviewCard({
       )}
 
       {/* Actions */}
-      <div className="flex items-center justify-end gap-2 px-4 py-3 bg-light-card dark:bg-dark-bg">
+      <div className="flex items-center justify-between px-4 py-3 bg-light-card dark:bg-dark-bg">
+        {/* Left side - Export button */}
         <button
-          onClick={onCancel}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-light-hover dark:hover:bg-dark-hover rounded-lg transition-colors"
+          onClick={handleExportProposal}
+          className="flex items-center gap-1.5 px-2 py-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-light-hover dark:hover:bg-dark-hover rounded-lg transition-colors"
+          title="Export as JSON (E)"
         >
-          <X className="w-4 h-4" />
-          Cancel
+          <Download className="w-3.5 h-3.5" />
+          Export
         </button>
-        <button
-          onClick={onShowImpact}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-dark-card border border-light-border dark:border-dark-border rounded-lg hover:bg-light-hover dark:hover:bg-dark-hover transition-colors"
-        >
-          <Eye className="w-4 h-4" />
-          Show Impact
-        </button>
-        <button
-          onClick={onProceed}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-accent-primary hover:bg-accent-primary-dark rounded-lg transition-colors"
-        >
-          <Check className="w-4 h-4" />
-          Proceed
-        </button>
+
+        {/* Right side - Action buttons */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onCancel}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-light-hover dark:hover:bg-dark-hover rounded-lg transition-colors"
+            title="Cancel (Esc)"
+          >
+            <X className="w-4 h-4" />
+            Cancel
+          </button>
+          <button
+            onClick={onShowImpact}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-dark-card border border-light-border dark:border-dark-border rounded-lg hover:bg-light-hover dark:hover:bg-dark-hover transition-colors"
+            title="Show Impact Details (I)"
+          >
+            <Eye className="w-4 h-4" />
+            Show Impact
+          </button>
+          <button
+            onClick={onProceed}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-accent-primary hover:bg-accent-primary-dark rounded-lg transition-colors"
+            title="Proceed with changes (Enter)"
+          >
+            <Check className="w-4 h-4" />
+            Proceed
+          </button>
+        </div>
       </div>
     </div>
   );

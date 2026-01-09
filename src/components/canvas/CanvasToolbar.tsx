@@ -24,6 +24,11 @@ interface CanvasToolbarProps {
   onAddEntity?: () => void;
   onDelete?: () => void;
   hasSelection?: boolean;
+  // Undo/Redo
+  onUndo?: () => void;
+  onRedo?: () => void;
+  canUndo?: boolean;
+  canRedo?: boolean;
 }
 
 export default function CanvasToolbar({
@@ -37,6 +42,10 @@ export default function CanvasToolbar({
   onAddEntity,
   onDelete,
   hasSelection,
+  onUndo,
+  onRedo,
+  canUndo = false,
+  canRedo = false,
 }: CanvasToolbarProps) {
   return (
     <div className="absolute top-4 left-4 flex flex-col gap-2">
@@ -129,23 +138,33 @@ export default function CanvasToolbar({
         )}
       </div>
 
-      {/* History (Undo/Redo) - Disabled for now */}
+      {/* History (Undo/Redo) */}
       <div className="bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-lg p-1 flex flex-col gap-1 shadow-sm" role="group" aria-label="History controls">
         <button
-          disabled
-          className="toolbar-btn opacity-40 cursor-not-allowed"
-          title="Undo (Coming Soon)"
-          aria-label="Undo - coming soon"
-          aria-disabled="true"
+          onClick={onUndo}
+          disabled={!canUndo}
+          className={`toolbar-btn ${
+            canUndo
+              ? 'hover:bg-light-hover dark:hover:bg-dark-hover'
+              : 'opacity-40 cursor-not-allowed'
+          }`}
+          title="Undo (Ctrl+Z)"
+          aria-label="Undo last action"
+          aria-disabled={!canUndo}
         >
           <Undo2 className="w-4 h-4" aria-hidden="true" />
         </button>
         <button
-          disabled
-          className="toolbar-btn opacity-40 cursor-not-allowed"
-          title="Redo (Coming Soon)"
-          aria-label="Redo - coming soon"
-          aria-disabled="true"
+          onClick={onRedo}
+          disabled={!canRedo}
+          className={`toolbar-btn ${
+            canRedo
+              ? 'hover:bg-light-hover dark:hover:bg-dark-hover'
+              : 'opacity-40 cursor-not-allowed'
+          }`}
+          title="Redo (Ctrl+Y)"
+          aria-label="Redo last action"
+          aria-disabled={!canRedo}
         >
           <Redo2 className="w-4 h-4" aria-hidden="true" />
         </button>
