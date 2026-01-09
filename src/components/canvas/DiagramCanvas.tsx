@@ -46,6 +46,7 @@ export default function DiagramCanvas() {
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [tool, setTool] = useState<'select' | 'pan'>('select');
+  const [showGrid, setShowGrid] = useState(true);
 
   // Drag state
   const [isDragging, setIsDragging] = useState(false);
@@ -56,6 +57,23 @@ export default function DiagramCanvas() {
 
   // Container dimensions for minimap
   const [containerDimensions, setContainerDimensions] = useState({ width: 0, height: 0 });
+
+  // Load grid preference from localStorage
+  useEffect(() => {
+    const savedGrid = localStorage.getItem('ai-dm-show-grid');
+    if (savedGrid !== null) {
+      setShowGrid(savedGrid === 'true');
+    }
+  }, []);
+
+  // Toggle grid handler
+  const handleToggleGrid = useCallback(() => {
+    setShowGrid(prev => {
+      const newValue = !prev;
+      localStorage.setItem('ai-dm-show-grid', String(newValue));
+      return newValue;
+    });
+  }, []);
 
   // Track container dimensions
   useEffect(() => {
@@ -513,12 +531,57 @@ export default function DiagramCanvas() {
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        {/* Clean background */}
+        {/* Background definitions */}
+        <defs>
+          {/* Small grid pattern */}
+          <pattern
+            id="smallGrid"
+            width="20"
+            height="20"
+            patternUnits="userSpaceOnUse"
+          >
+            <path
+              d="M 20 0 L 0 0 0 20"
+              fill="none"
+              className="stroke-gray-200 dark:stroke-gray-800"
+              strokeWidth="0.5"
+            />
+          </pattern>
+          {/* Large grid pattern */}
+          <pattern
+            id="largeGrid"
+            width="100"
+            height="100"
+            patternUnits="userSpaceOnUse"
+          >
+            <rect width="100" height="100" fill="url(#smallGrid)" />
+            <path
+              d="M 100 0 L 0 0 0 100"
+              fill="none"
+              className="stroke-gray-300 dark:stroke-gray-700"
+              strokeWidth="1"
+            />
+          </pattern>
+        </defs>
+
+        {/* Background */}
         <rect
           className="canvas-background fill-gray-50 dark:fill-[#0C0C0C]"
           width="100%"
           height="100%"
         />
+
+        {/* Grid overlay */}
+        {showGrid && (
+          <rect
+            width="100%"
+            height="100%"
+            fill="url(#largeGrid)"
+            style={{
+              transform: `translate(${pan.x % 100}px, ${pan.y % 100}px)`,
+            }}
+          />
+        )}
 
         {/* Main content group with pan and zoom */}
         <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
@@ -572,6 +635,8 @@ export default function DiagramCanvas() {
         onRedo={redo}
         canUndo={canUndo}
         canRedo={canRedo}
+        showGrid={showGrid}
+        onToggleGrid={handleToggleGrid}
       />
 
       {/* Model info */}

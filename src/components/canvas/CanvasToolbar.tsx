@@ -11,6 +11,8 @@ import {
   Trash2,
   Undo2,
   Redo2,
+  Grid,
+  Square,
 } from 'lucide-react';
 
 interface CanvasToolbarProps {
@@ -29,6 +31,9 @@ interface CanvasToolbarProps {
   onRedo?: () => void;
   canUndo?: boolean;
   canRedo?: boolean;
+  // Grid toggle
+  showGrid?: boolean;
+  onToggleGrid?: () => void;
 }
 
 export default function CanvasToolbar({
@@ -46,6 +51,8 @@ export default function CanvasToolbar({
   onRedo,
   canUndo = false,
   canRedo = false,
+  showGrid = true,
+  onToggleGrid,
 }: CanvasToolbarProps) {
   return (
     <div className="absolute top-4 left-4 flex flex-col gap-2">
@@ -106,6 +113,24 @@ export default function CanvasToolbar({
         >
           <Maximize2 className="w-4 h-4" aria-hidden="true" />
         </button>
+        {onToggleGrid && (
+          <>
+            <div className="border-t border-light-border dark:border-dark-border my-1" aria-hidden="true" />
+            <button
+              onClick={onToggleGrid}
+              className={`toolbar-btn ${showGrid ? 'active' : ''}`}
+              title={showGrid ? "Hide Grid (Plain Background)" : "Show Grid"}
+              aria-label={showGrid ? "Switch to plain background" : "Switch to grid background"}
+              aria-pressed={showGrid}
+            >
+              {showGrid ? (
+                <Grid className="w-4 h-4" aria-hidden="true" />
+              ) : (
+                <Square className="w-4 h-4" aria-hidden="true" />
+              )}
+            </button>
+          </>
+        )}
       </div>
 
       {/* Entity Actions */}
