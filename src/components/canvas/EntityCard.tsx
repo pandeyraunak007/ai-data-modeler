@@ -10,6 +10,7 @@ interface EntityCardProps {
   isSelected: boolean;
   onSelect: () => void;
   onDragStart: (e: React.MouseEvent) => void;
+  onTouchStart?: (e: React.TouchEvent) => void;
   onEdit: () => void;
 }
 
@@ -18,6 +19,7 @@ export default function EntityCard({
   isSelected,
   onSelect,
   onDragStart,
+  onTouchStart,
   onEdit,
 }: EntityCardProps) {
   const { viewMode } = useModel();
@@ -52,22 +54,27 @@ export default function EntityCard({
       style={{ height: ATTRIBUTE_ROW_HEIGHT }}
     >
       {/* Icons */}
-      <div className="w-5 flex justify-center">
-        {attr.isPrimaryKey && <Key className="w-3 h-3 text-yellow-500" />}
-        {attr.isForeignKey && !attr.isPrimaryKey && <Link className="w-3 h-3 text-accent-info" />}
+      <div className="w-5 flex justify-center" aria-hidden="true">
+        {attr.isPrimaryKey && <Key className="w-3 h-3 text-yellow-500" aria-hidden="true" />}
+        {attr.isForeignKey && !attr.isPrimaryKey && <Link className="w-3 h-3 text-accent-info" aria-hidden="true" />}
         {attr.isIndexed && !attr.isPrimaryKey && !attr.isForeignKey && (
-          <Hash className="w-3 h-3 text-gray-500" />
+          <Hash className="w-3 h-3 text-gray-500" aria-hidden="true" />
         )}
       </div>
 
       {/* Attribute name */}
       <span className={`flex-1 truncate ${attr.isPrimaryKey ? 'font-semibold' : ''}`}>
         {attr.name}
+        {attr.isPrimaryKey && <span className="sr-only"> (Primary Key)</span>}
+        {attr.isForeignKey && !attr.isPrimaryKey && <span className="sr-only"> (Foreign Key)</span>}
       </span>
 
       {/* Required indicator */}
       {attr.isRequired && !attr.isPrimaryKey && (
-        <CircleDot className="w-2.5 h-2.5 text-accent-danger mr-1" />
+        <>
+          <CircleDot className="w-2.5 h-2.5 text-accent-danger mr-1" aria-hidden="true" />
+          <span className="sr-only">Required</span>
+        </>
       )}
 
       {/* Data type */}
@@ -87,7 +94,8 @@ export default function EntityCard({
         onEdit();
       }}
       onMouseDown={onDragStart}
-      style={{ cursor: 'move' }}
+      onTouchStart={onTouchStart}
+      style={{ cursor: 'move', touchAction: 'none' }}
     >
       {/* Card background */}
       <foreignObject
@@ -116,8 +124,9 @@ export default function EntityCard({
                 }}
                 className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-white/20 transition-all"
                 title="Edit entity"
+                aria-label={`Edit ${displayName} entity`}
               >
-                <Edit3 className="w-3.5 h-3.5 text-white" />
+                <Edit3 className="w-3.5 h-3.5 text-white" aria-hidden="true" />
               </button>
             </div>
           </div>

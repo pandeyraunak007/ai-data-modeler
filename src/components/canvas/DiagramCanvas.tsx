@@ -6,8 +6,10 @@ import { Entity, Relationship, generateId, calculateEntityHeight, DEFAULT_ENTITY
 import EntityCard from './EntityCard';
 import RelationshipLine from './RelationshipLine';
 import CanvasToolbar from './CanvasToolbar';
+import CanvasBottomBar from './CanvasBottomBar';
 import EntityEditModal from './EntityEditModal';
 import RelationshipEditModal from './RelationshipEditModal';
+import { autoLayoutEntities, smartLayout, minimizeCrossings } from '@/lib/autoLayout';
 
 const MIN_ZOOM = 0.1;
 const MAX_ZOOM = 3;
@@ -175,6 +177,81 @@ export default function DiagramCanvas() {
     setDragEntityId(null);
   }, []);
 
+  // Touch event handlers for mobile support
+  const handleTouchStart = useCallback(
+    (e: React.TouchEvent) => {
+      if (e.touches.length !== 1) return;
+      const touch = e.touches[0];
+
+      const rect = svgRef.current?.getBoundingClientRect();
+      if (!rect) return;
+
+      if (tool === 'pan') {
+        setIsDragging(true);
+        setDragType('pan');
+        setDragStart({ x: touch.clientX - pan.x, y: touch.clientY - pan.y });
+      }
+    },
+    [tool, pan]
+  );
+
+  const handleEntityTouchStart = useCallback(
+    (entityId: string, e: React.TouchEvent) => {
+      e.stopPropagation();
+      if (tool !== 'select') return;
+      if (e.touches.length !== 1) return;
+
+      const touch = e.touches[0];
+      const entity = model?.entities.find((en) => en.id === entityId);
+      if (!entity) return;
+
+      const rect = svgRef.current?.getBoundingClientRect();
+      if (!rect) return;
+
+      const x = (touch.clientX - rect.left - pan.x) / zoom;
+      const y = (touch.clientY - rect.top - pan.y) / zoom;
+
+      setIsDragging(true);
+      setDragType('entity');
+      setDragEntityId(entityId);
+      setDragOffset({ x: x - entity.x, y: y - entity.y });
+      selectEntity(entityId);
+    },
+    [tool, model, pan, zoom, selectEntity]
+  );
+
+  const handleTouchMove = useCallback(
+    (e: React.TouchEvent) => {
+      if (!isDragging || e.touches.length !== 1) return;
+      const touch = e.touches[0];
+
+      if (dragType === 'pan') {
+        setPan({
+          x: touch.clientX - dragStart.x,
+          y: touch.clientY - dragStart.y,
+        });
+      } else if (dragType === 'entity' && dragEntityId) {
+        const rect = svgRef.current?.getBoundingClientRect();
+        if (!rect) return;
+
+        const x = (touch.clientX - rect.left - pan.x) / zoom;
+        const y = (touch.clientY - rect.top - pan.y) / zoom;
+
+        updateEntity(dragEntityId, {
+          x: Math.max(0, x - dragOffset.x),
+          y: Math.max(0, y - dragOffset.y),
+        });
+      }
+    },
+    [isDragging, dragType, dragStart, dragEntityId, dragOffset, pan, zoom, updateEntity]
+  );
+
+  const handleTouchEnd = useCallback(() => {
+    setIsDragging(false);
+    setDragType(null);
+    setDragEntityId(null);
+  }, []);
+
   // Handle click on canvas background to deselect
   const handleCanvasClick = useCallback(
     (e: React.MouseEvent) => {
@@ -185,6 +262,37 @@ export default function DiagramCanvas() {
     },
     [selectEntity, selectRelationship]
   );
+
+  // Auto-layout handlers
+  const handleAutoLayout = useCallback((algorithm: 'grid' | 'smart' | 'minimize') => {
+    if (!model || model.entities.length === 0) return;
+
+    let layoutedEntities: Entity[];
+
+    switch (algorithm) {
+      case 'grid':
+        layoutedEntities = autoLayoutEntities(model.entities);
+        break;
+      case 'smart':
+        layoutedEntities = smartLayout(model.entities, model.relationships);
+        break;
+      case 'minimize':
+        layoutedEntities = minimizeCrossings(model.entities, model.relationships);
+        break;
+      default:
+        return;
+    }
+
+    // Update all entity positions
+    layoutedEntities.forEach(entity => {
+      updateEntity(entity.id, { x: entity.x, y: entity.y });
+    });
+
+    // Fit to screen after layout with a small delay to allow state updates
+    setTimeout(() => {
+      handleFitToScreen();
+    }, 100);
+  }, [model, updateEntity, handleFitToScreen]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -230,12 +338,25 @@ export default function DiagramCanvas() {
             if (rel) setEditingRelationship(rel);
           }
           break;
+        // Layout shortcuts
+        case 'l':
+        case 'L':
+          handleAutoLayout('smart');
+          break;
+        case 'g':
+        case 'G':
+          handleAutoLayout('grid');
+          break;
+        case 'm':
+        case 'M':
+          handleAutoLayout('minimize');
+          break;
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleZoomIn, handleZoomOut, handleZoomReset, selectedEntityId, selectedRelationshipId, deleteEntity, deleteRelationship, selectEntity, selectRelationship, model]);
+  }, [handleZoomIn, handleZoomOut, handleZoomReset, selectedEntityId, selectedRelationshipId, deleteEntity, deleteRelationship, selectEntity, selectRelationship, model, handleAutoLayout]);
 
   // Entity edit handlers
   const handleEntityEdit = useCallback((entity: Entity) => {
@@ -329,13 +450,16 @@ export default function DiagramCanvas() {
     >
       <svg
         ref={svgRef}
-        className={`w-full h-full ${isDragging ? 'cursor-grabbing' : tool === 'pan' ? 'cursor-grab' : 'cursor-default'}`}
+        className={`w-full h-full ${isDragging ? 'cursor-grabbing' : tool === 'pan' ? 'cursor-grab' : 'cursor-default'} touch-none`}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
         onWheel={handleWheel}
         onClick={handleCanvasClick}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       >
         {/* Clean background */}
         <rect
@@ -373,6 +497,7 @@ export default function DiagramCanvas() {
               isSelected={selectedEntityId === entity.id}
               onSelect={() => selectEntity(entity.id)}
               onDragStart={(e) => handleEntityDragStart(entity.id, e)}
+              onTouchStart={(e) => handleEntityTouchStart(entity.id, e)}
               onEdit={() => handleEntityEdit(entity)}
             />
           ))}
@@ -399,6 +524,14 @@ export default function DiagramCanvas() {
           {model.entities.length} entities · {model.relationships.length} relationships
         </span>
       </div>
+
+      {/* Bottom Layout Bar */}
+      <CanvasBottomBar
+        onLayoutGrid={() => handleAutoLayout('grid')}
+        onLayoutSmart={() => handleAutoLayout('smart')}
+        onLayoutMinimize={() => handleAutoLayout('minimize')}
+        disabled={model.entities.length === 0}
+      />
 
       {/* Entity Edit Modal */}
       {editingEntity && (

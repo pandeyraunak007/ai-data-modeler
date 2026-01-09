@@ -177,10 +177,10 @@ export default function WorkspacePage() {
 
   if (!model) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-dark-bg">
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-dark-bg" role="status" aria-label="Loading model">
         <div className="text-center">
           <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-accent-primary/20 flex items-center justify-center">
-            <Database className="w-8 h-8 text-accent-primary animate-pulse" />
+            <Database className="w-8 h-8 text-accent-primary animate-pulse" aria-hidden="true" />
           </div>
           <p className="text-gray-500 dark:text-gray-400">Loading model...</p>
         </div>
@@ -198,14 +198,15 @@ export default function WorkspacePage() {
             onClick={() => router.push('/')}
             className="p-2 hover:bg-light-hover dark:hover:bg-dark-hover rounded-lg transition-colors"
             title="Back to Home"
+            aria-label="Back to Home"
           >
-            <ChevronLeft className="w-5 h-5" />
+            <ChevronLeft className="w-5 h-5" aria-hidden="true" />
           </button>
 
           {/* Logo */}
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent-primary to-purple-600 flex items-center justify-center">
-              <Database className="w-5 h-5 text-white" />
+              <Database className="w-5 h-5 text-white" aria-hidden="true" />
             </div>
             <div>
               <h1 className="font-semibold leading-tight text-gray-900 dark:text-white">{model.name}</h1>
@@ -247,20 +248,22 @@ export default function WorkspacePage() {
           <div className="w-px h-6 bg-light-border dark:bg-dark-border mx-1" />
 
           {/* File Operations */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1" role="group" aria-label="File operations">
             <button
               onClick={() => router.push('/')}
               className="p-2 rounded-lg bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border hover:bg-light-hover dark:hover:bg-dark-hover transition-colors"
               title="New Model"
+              aria-label="Create new model"
             >
-              <FilePlus className="w-4 h-4" />
+              <FilePlus className="w-4 h-4" aria-hidden="true" />
             </button>
             <button
               onClick={() => fileInputRef.current?.click()}
               className="p-2 rounded-lg bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border hover:bg-light-hover dark:hover:bg-dark-hover transition-colors"
               title="Open Model"
+              aria-label="Open existing model"
             >
-              <FolderOpen className="w-4 h-4" />
+              <FolderOpen className="w-4 h-4" aria-hidden="true" />
             </button>
             <input
               ref={fileInputRef}
@@ -274,11 +277,13 @@ export default function WorkspacePage() {
               disabled={isImportingSql}
               className="p-2 rounded-lg bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border hover:bg-light-hover dark:hover:bg-dark-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               title="Import SQL (DDL)"
+              aria-label="Import SQL DDL file"
+              aria-busy={isImportingSql}
             >
               {isImportingSql ? (
-                <Loader2 className="w-4 h-4 animate-spin text-accent-primary" />
+                <Loader2 className="w-4 h-4 animate-spin text-accent-primary" aria-hidden="true" />
               ) : (
-                <Upload className="w-4 h-4" />
+                <Upload className="w-4 h-4" aria-hidden="true" />
               )}
             </button>
             <input
@@ -292,8 +297,9 @@ export default function WorkspacePage() {
               onClick={handleSave}
               className="p-2 rounded-lg bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border hover:bg-light-hover dark:hover:bg-dark-hover transition-colors"
               title="Save Model"
+              aria-label="Save model to browser storage"
             >
-              <Save className="w-4 h-4" />
+              <Save className="w-4 h-4" aria-hidden="true" />
             </button>
           </div>
 
@@ -303,12 +309,12 @@ export default function WorkspacePage() {
           <button
             onClick={toggleTheme}
             className="p-2 rounded-lg bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border hover:bg-light-hover dark:hover:bg-dark-hover transition-all"
-            aria-label="Toggle theme"
+            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
           >
             {theme === 'dark' ? (
-              <Sun className="w-4 h-4 text-amber-500" />
+              <Sun className="w-4 h-4 text-amber-500" aria-hidden="true" />
             ) : (
-              <Moon className="w-4 h-4 text-slate-600" />
+              <Moon className="w-4 h-4 text-slate-600" aria-hidden="true" />
             )}
           </button>
 
@@ -318,10 +324,13 @@ export default function WorkspacePage() {
               onClick={() => setShowExportMenu(!showExportMenu)}
               className="flex items-center gap-2 px-3 py-1.5 bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-lg hover:bg-light-hover dark:hover:bg-dark-hover transition-colors text-sm"
               title="Export Model"
+              aria-label="Export model"
+              aria-expanded={showExportMenu}
+              aria-haspopup="menu"
             >
-              <Download className="w-4 h-4" />
+              <Download className="w-4 h-4" aria-hidden="true" />
               <span className="hidden sm:inline">Export</span>
-              <ChevronDown className="w-3 h-3" />
+              <ChevronDown className="w-3 h-3" aria-hidden="true" />
             </button>
 
             {showExportMenu && (
@@ -330,17 +339,19 @@ export default function WorkspacePage() {
                   className="fixed inset-0 z-10"
                   onClick={() => setShowExportMenu(false)}
                 />
-                <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-dark-card border border-light-border dark:border-dark-border rounded-xl shadow-xl z-20 overflow-hidden">
+                <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-dark-card border border-light-border dark:border-dark-border rounded-xl shadow-xl z-20 overflow-hidden" role="menu" aria-label="Export options">
                   {/* Image Export Section */}
-                  <div className="px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 dark:bg-dark-hover">
+                  <div className="px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 dark:bg-dark-hover" aria-hidden="true">
                     Image
                   </div>
                   <button
                     onClick={handleExportPng}
                     disabled={isExportingImage}
                     className="w-full flex items-center gap-3 px-4 py-3 text-sm text-left hover:bg-light-hover dark:hover:bg-dark-hover transition-colors disabled:opacity-50"
+                    role="menuitem"
+                    aria-label="Export as PNG image"
                   >
-                    <Image className="w-4 h-4 text-green-600" />
+                    <Image className="w-4 h-4 text-green-600" aria-hidden="true" />
                     <div>
                       <div className="font-medium">Export PNG</div>
                       <div className="text-xs text-gray-500">High-res image (2x)</div>
@@ -349,8 +360,10 @@ export default function WorkspacePage() {
                   <button
                     onClick={handleExportSvg}
                     className="w-full flex items-center gap-3 px-4 py-3 text-sm text-left hover:bg-light-hover dark:hover:bg-dark-hover transition-colors"
+                    role="menuitem"
+                    aria-label="Export as SVG vector image"
                   >
-                    <FileImage className="w-4 h-4 text-purple-600" />
+                    <FileImage className="w-4 h-4 text-purple-600" aria-hidden="true" />
                     <div>
                       <div className="font-medium">Export SVG</div>
                       <div className="text-xs text-gray-500">Scalable vector</div>
@@ -360,8 +373,10 @@ export default function WorkspacePage() {
                     onClick={handleCopyPng}
                     disabled={isExportingImage}
                     className="w-full flex items-center gap-3 px-4 py-3 text-sm text-left hover:bg-light-hover dark:hover:bg-dark-hover transition-colors disabled:opacity-50"
+                    role="menuitem"
+                    aria-label="Copy diagram to clipboard as PNG"
                   >
-                    <Copy className="w-4 h-4 text-blue-600" />
+                    <Copy className="w-4 h-4 text-blue-600" aria-hidden="true" />
                     <div>
                       <div className="font-medium">Copy to Clipboard</div>
                       <div className="text-xs text-gray-500">PNG image</div>
@@ -369,7 +384,7 @@ export default function WorkspacePage() {
                   </button>
 
                   {/* Data Export Section */}
-                  <div className="px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 dark:bg-dark-hover border-t border-light-border dark:border-dark-border">
+                  <div className="px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 dark:bg-dark-hover border-t border-light-border dark:border-dark-border" aria-hidden="true">
                     Data
                   </div>
                   <button
@@ -378,8 +393,10 @@ export default function WorkspacePage() {
                       setShowExportMenu(false);
                     }}
                     className="w-full flex items-center gap-3 px-4 py-3 text-sm text-left hover:bg-light-hover dark:hover:bg-dark-hover transition-colors"
+                    role="menuitem"
+                    aria-label="Export as JSON data file"
                   >
-                    <Download className="w-4 h-4 text-gray-500" />
+                    <Download className="w-4 h-4 text-gray-500" aria-hidden="true" />
                     <div>
                       <div className="font-medium">Export JSON</div>
                       <div className="text-xs text-gray-500">Model data file</div>
@@ -391,8 +408,10 @@ export default function WorkspacePage() {
                       setShowExportMenu(false);
                     }}
                     className="w-full flex items-center gap-3 px-4 py-3 text-sm text-left hover:bg-light-hover dark:hover:bg-dark-hover transition-colors"
+                    role="menuitem"
+                    aria-label="Export as SQL DDL script"
                   >
-                    <FileCode className="w-4 h-4 text-accent-primary" />
+                    <FileCode className="w-4 h-4 text-accent-primary" aria-hidden="true" />
                     <div>
                       <div className="font-medium">Export SQL DDL</div>
                       <div className="text-xs text-gray-500">CREATE TABLE scripts</div>

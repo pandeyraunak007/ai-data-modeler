@@ -41,36 +41,42 @@ export default function CanvasToolbar({
   return (
     <div className="absolute top-4 left-4 flex flex-col gap-2">
       {/* Tool selection */}
-      <div className="bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-lg p-1 flex flex-col gap-1 shadow-sm">
+      <div className="bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-lg p-1 flex flex-col gap-1 shadow-sm" role="toolbar" aria-label="Canvas tools">
         <button
           onClick={() => onToolChange('select')}
           className={`toolbar-btn ${tool === 'select' ? 'active' : ''}`}
           title="Select (V)"
+          aria-label="Select tool"
+          aria-pressed={tool === 'select'}
         >
-          <MousePointer className="w-4 h-4" />
+          <MousePointer className="w-4 h-4" aria-hidden="true" />
         </button>
         <button
           onClick={() => onToolChange('pan')}
           className={`toolbar-btn ${tool === 'pan' ? 'active' : ''}`}
           title="Pan (H)"
+          aria-label="Pan tool"
+          aria-pressed={tool === 'pan'}
         >
-          <Hand className="w-4 h-4" />
+          <Hand className="w-4 h-4" aria-hidden="true" />
         </button>
       </div>
 
       {/* Zoom controls */}
-      <div className="bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-lg p-1 flex flex-col gap-1 shadow-sm">
+      <div className="bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-lg p-1 flex flex-col gap-1 shadow-sm" role="group" aria-label="Zoom controls">
         <button
           onClick={onZoomIn}
           className="toolbar-btn"
           title="Zoom In (+)"
+          aria-label="Zoom in"
         >
-          <ZoomIn className="w-4 h-4" />
+          <ZoomIn className="w-4 h-4" aria-hidden="true" />
         </button>
         <button
           onClick={onZoomReset}
           className="toolbar-btn text-xs font-mono w-8 h-8 flex items-center justify-center"
           title="Reset Zoom"
+          aria-label={`Current zoom ${Math.round(zoom * 100)}%, click to reset`}
         >
           {Math.round(zoom * 100)}%
         </button>
@@ -78,28 +84,31 @@ export default function CanvasToolbar({
           onClick={onZoomOut}
           className="toolbar-btn"
           title="Zoom Out (-)"
+          aria-label="Zoom out"
         >
-          <ZoomOut className="w-4 h-4" />
+          <ZoomOut className="w-4 h-4" aria-hidden="true" />
         </button>
-        <div className="border-t border-light-border dark:border-dark-border my-1" />
+        <div className="border-t border-light-border dark:border-dark-border my-1" aria-hidden="true" />
         <button
           onClick={onFitToScreen}
           className="toolbar-btn"
           title="Fit to Screen"
+          aria-label="Fit diagram to screen"
         >
-          <Maximize2 className="w-4 h-4" />
+          <Maximize2 className="w-4 h-4" aria-hidden="true" />
         </button>
       </div>
 
       {/* Entity Actions */}
-      <div className="bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-lg p-1 flex flex-col gap-1 shadow-sm">
+      <div className="bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-lg p-1 flex flex-col gap-1 shadow-sm" role="group" aria-label="Entity actions">
         {onAddEntity && (
           <button
             onClick={onAddEntity}
             className="toolbar-btn bg-accent-primary/20 hover:bg-accent-primary/30 text-accent-primary"
             title="Add Entity"
+            aria-label="Add new entity"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-4 h-4" aria-hidden="true" />
           </button>
         )}
         {onDelete && (
@@ -112,27 +121,33 @@ export default function CanvasToolbar({
                 : 'opacity-40 cursor-not-allowed'
             }`}
             title="Delete Selected (Del)"
+            aria-label="Delete selected item"
+            aria-disabled={!hasSelection}
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="w-4 h-4" aria-hidden="true" />
           </button>
         )}
       </div>
 
       {/* History (Undo/Redo) - Disabled for now */}
-      <div className="bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-lg p-1 flex flex-col gap-1 shadow-sm">
+      <div className="bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-lg p-1 flex flex-col gap-1 shadow-sm" role="group" aria-label="History controls">
         <button
           disabled
           className="toolbar-btn opacity-40 cursor-not-allowed"
           title="Undo (Coming Soon)"
+          aria-label="Undo - coming soon"
+          aria-disabled="true"
         >
-          <Undo2 className="w-4 h-4" />
+          <Undo2 className="w-4 h-4" aria-hidden="true" />
         </button>
         <button
           disabled
           className="toolbar-btn opacity-40 cursor-not-allowed"
           title="Redo (Coming Soon)"
+          aria-label="Redo - coming soon"
+          aria-disabled="true"
         >
-          <Redo2 className="w-4 h-4" />
+          <Redo2 className="w-4 h-4" aria-hidden="true" />
         </button>
       </div>
     </div>
